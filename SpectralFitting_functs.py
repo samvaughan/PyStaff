@@ -4,15 +4,12 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import numpy as np 
 import scipy.constants as const
-from ppxf import ppxf_util as util
-#from astropy.io import fits
-#import scipy.interpolate as si
-#from stellarpops.tools import CD12tools as CT
-#import scipy.constants as const
-from stellarpops.tools import fspTools as FT
-#from scipy.stats import norm
-from scipy import special
+import ppxf_util as util
 
+from stellarpops.tools import fspTools as FT
+
+from scipy import special
+import scipy.interpolate as si
 
 
 def rebin_MUSE_spectrum(lamdas, flux, errors, pixel_weights, skyspecs=None, c=299792.458):
@@ -67,8 +64,57 @@ def rebin_MUSE_spectrum(lamdas, flux, errors, pixel_weights, skyspecs=None, c=29
 ################################################################################################################################################################
 
 
+def get_start_vals_and_bounds(theta):
 
+    """
+    Given a set of parameter values in lmfit format, get their values and bounds as numpy arrays.
+    This is taken from the lmfit code itself
+    """
+    variables=[thing for thing in theta if theta[thing].vary]
+    ndim=len(variables)
+    var_arr = np.zeros(ndim)
+    i = 0
+    bounds = []
+    for par in theta:
+        param = theta[par]
+        if param.expr is not None:
+            param.vary = False
+        if param.vary:
+            var_arr[i] = param.value
+            i += 1
+        else:
+            # don't want to append bounds if they're not being varied.
+            continue
 
+        param.from_internal = lambda val: val
+        lb, ub = param.min, param.max
+        if lb is None or lb is np.nan:
+            lb = -np.inf
+        if ub is None or ub is np.nan:
+            ub = np.inf
+        bounds.append((lb, ub))
+    bounds = np.array(bounds)
+
+    return var_arr, bounds
+
+def get_starting_poitions_for_walkers(start_values, stds, nwalkers):
+
+    """
+    Given a set of starting values and spreads for each value, make a set of random starting positions for each walker
+    """
+
+    ball=np.random.randn(start_values.shape[0], nwalkers)*stds[:, None] + start_values[:, None]
+
+    return ball
+
+def make_mask(lamdas, wavelengths):
+    mask=np.ones_like(lamdas, dtype=bool)
+    for pair in wavelengths:
+        low, high=pair
+        #import pdb; pdb.set_trace()
+        mask = mask & (lamdas<low) | (lamdas>high)
+
+    return mask
 
 def contiguous_zeros(a):
     # Find the beginning and end of each run of 0s in the weights 
@@ -105,12 +151,6 @@ def plot_fit(theta, parameters, fig=None, axs=None, color='b'):
 
     
     if fig is None or axs is None:
-
-        #Can I delete these?
-        #gs_1 = gridspec.GridSpec(2, 2, width_ratios=[1, 1], height_ratios=[2, 1])
-        #gs_2 = gridspec.GridSpec(2, 2, width_ratios=[1, 1], height_ratios=[2, 1])
-        #gs_3 = gridspec.GridSpec(2, 2, width_ratios=[1, 1], height_ratios=[2, 1])
-        #gs_4 = gridspec.GridSpec(2, 2, width_ratios=[1, 1], height_ratios=[2, 1])
 
         N_cols=np.ceil(len(fit_wavelengths)/2).astype(int)
 
@@ -243,7 +283,7 @@ def get_best_fit_template(theta, parameters, convolve=True):
     #Have to treat Na differently
     na_correction=na_interp((Na_abundance, age, Z, logLams))
 
-    #Add things together- see Appendix of Vaughan+ 2017
+    #Add things together- see Appendix of Vaughan+ 2018
     template=np.exp(np.log(base_template)+general_correction+positive_only_correction+na_correction)
 
 
@@ -252,6 +292,19 @@ def get_best_fit_template(theta, parameters, convolve=True):
         logLams=logLam_gal.copy()
 
     return logLams, template, base_template
+
+def get_linear_best_fit_template(theta, parameters, fit_class, convole=True):
+
+
+    logLams, template, base_template=get_best_fit_template(theta, parameters, convolve=convole)
+
+    interp1=si.interp1d(np.exp(logLams), template, fill_value='extrapolate')
+    lin_template=interp1(fit_class.lin_lam)
+
+    interp2=si.interp1d(np.exp(fit_class.logLam_template), base_template, fill_value='extrapolate')
+    lin_base_template=interp2(fit_class.lin_lam)
+
+    return lin_template, lin_base_template
 
 
 
