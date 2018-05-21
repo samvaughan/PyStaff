@@ -12,7 +12,7 @@ from scipy import special
 import scipy.interpolate as si
 
 
-def rebin_MUSE_spectrum(lamdas, flux, errors, pixel_weights, skyspecs=None, c=299792.458):
+def rebin_MUSE_spectrum(lamdas, flux, errors, pixel_weights, instrumental_resolution=None, skyspecs=None, c=299792.458):
     ##############################################################################################################################################################
 
 
@@ -38,6 +38,9 @@ def rebin_MUSE_spectrum(lamdas, flux, errors, pixel_weights, skyspecs=None, c=29
     if skyspecs is not None:
         skyspecs=skyspecs[:, mask[0]]
 
+    if instrumental_resolution is not None:
+        instrumental_resolution=instrumental_resolution[mask]
+
     #GoodPixels from pPXF
     
 
@@ -56,11 +59,14 @@ def rebin_MUSE_spectrum(lamdas, flux, errors, pixel_weights, skyspecs=None, c=29
 
         all_sky=np.array([O2_sky, sky, OH_sky, NaD_sky])
 
-        
+    log_inst_res=None
+    if instrumental_resolution is not None:
+        log_inst_res, _, _=util.log_rebin(lam_range_gal, instrumental_resolution, velscale=velscale)
+
 
     goodpixels = np.arange(len(galaxy))     
 
-    return galaxy, noise, all_sky, weights, velscale, goodpixels, lam_range_gal, logLam
+    return galaxy, noise, all_sky, log_inst_res, weights, velscale, goodpixels, lam_range_gal, logLam
 ################################################################################################################################################################
 
 
@@ -332,6 +338,7 @@ def lnlike(theta, parameters, plot=False, ret_specs=False):
     logLam_gal=parameters['log_lam']
     fit_wavelengths=parameters['fit_wavelengths']
     c_light=parameters['c_light']
+    instrumental_resolution=parameters['instrumental_resolution']
 
 
 
@@ -384,6 +391,7 @@ def lnlike(theta, parameters, plot=False, ret_specs=False):
 
 
     _, temp, base_template=get_best_fit_template(theta, parameters, convolve=True)
+
     
     #Ranges we fit over- these have to change with redshift
     fit_ranges=fit_wavelengths*(np.exp(vel/c_light))
@@ -404,16 +412,12 @@ def lnlike(theta, parameters, plot=False, ret_specs=False):
     #galmedian=np.median(galaxy)
     #t_median=np.median(temp)
 
-    temp_medianed=temp#/t_median
-    galaxy_medianed=galaxy#/galmedian
-    noise_medianed=noise#/galmedian
 
-    #overall_poly=FT.fit_legendre_polys(galaxy_medianed/temp_medianed, 20, weights=1.0/noise_medianed**2)
-    #temp_medianed=temp_medianed*overall_poly
+
+
 
     #Make the emission lines:
     if emission_lines is not None:
-
         unconvolved_em_lines=Hbeta_flux*emission_lines[:, 0] + Ha_flux*emission_lines[:, 1] + SII_6716*emission_lines[:, 2] + SII_6731*emission_lines[:, 3] + OIII * emission_lines[:, 4] + OI*emission_lines[:, 5] + NII*emission_lines[:, 6]
         convolved_em_lines=FT.convolve_template_with_losvd(unconvolved_em_lines, vel_gas, sig_gas, velscale=velscale, vsyst=vsyst)[:len(galaxy)]
     else:
@@ -432,6 +436,16 @@ def lnlike(theta, parameters, plot=False, ret_specs=False):
     polys=[]
 
 
+    #Convolve with the instrumental resolution
+    if instrumental_resolution is not None:
+        temp=util.gaussian_filter1d(temp, instrumental_resolution/velscale)
+        #Bit hacky
+        #Replace the first and last few values of temp (which get set to zero by the convolution)
+        #to the median value of the whole thing
+        temp[temp==0]=np.median(temp)
+
+
+
 
     #Do the fitting
     for i, fit_range in enumerate(fit_ranges):
@@ -440,10 +454,12 @@ def lnlike(theta, parameters, plot=False, ret_specs=False):
         
         gmask=np.where((np.exp(logLam_gal)>fit_range[0]) & (np.exp(logLam_gal)<fit_range[1]))
         
-        g=galaxy_medianed[gmask]
-        n=noise_medianed[gmask]
-        t=temp_medianed[gmask]
+        g=galaxy[gmask]
+        n=noise[gmask]
+        t=temp[gmask]
         gas=convolved_em_lines[gmask]
+
+
         # galmedian=np.median(g)
         # tempmedian=np.median(t)
 
