@@ -11,9 +11,6 @@ import argparse
 
 from astropy.io import fits
 
-# import sys
-# sys.path.append('/home/vaughan/Science/SpectralAnalysis/SpectralFitting/NGC1399')
-# import MUSE_functs as MF
 from astropy.wcs import WCS
 
 import lmfit_SPV as LMSPV
@@ -103,7 +100,7 @@ lamdas=M_WCS.wcs_pix2world(np.arange(len(flux))[:,np.newaxis], 0).flatten()*(10*
 
 #From my MUSE work on NGC 1399
 #Get widths of isolated skylines
-centres, dVs=np.genfromtxt('/home/vaughan/Science/NGC1399_MUSE/SpectralResolution/MUSE_sigma_inst.txt', unpack=True)
+centres, dVs=np.genfromtxt('MUSE_sigma_inst.txt', unpack=True)
 #CHANGE THE VALUES FROM SIGMA TO FWHM
 #I think that they should be FWHM anyway, and I got it wrong in the NGC 1399 paper (as did Mentz et. al 2016 and Davor Krajnovic 2015!!!)
 poly=np.polyfit(centres, dVs*np.sqrt(8*np.log(2)), 3)
