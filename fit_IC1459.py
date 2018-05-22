@@ -41,10 +41,10 @@ def lnprob(T, theta, var_names, bounds, ret_specs=False):
         theta[name].value = val
 
     if ret_specs==False:
-        ll=SF.lnlike(theta, fit.fit_settings)
+        ll=SF.lnlike(theta, parameters)
         return ll
     else:
-        return SF.lnlike(theta, SF.fit_settings, ret_specs=True)
+        return SF.lnlike(theta, parameters, ret_specs=True)
 
 
 j=0
@@ -160,6 +160,7 @@ with MPIPool() as pool:
         print 'Setting up the fit'
         fit=SpectralFitting.SpectralFit(lamdas, flux, errors, pixel_weights, fit_wavelengths, FWHM_gal, instrumental_resolution=instrumental_resolution, skyspecs=None, element_imf=element_imf)
         fit.set_up_fit()
+        parameters=fit.fit_settings
 
         theta=LMSPV.Parameters()
         theta.add('Vel', value=1800.91, min=-1000.0, max=10000.0)
@@ -219,7 +220,7 @@ with MPIPool() as pool:
         #Vice versa, plus add in the fixed value
         fixed=[ "{}={},".format(thing, theta[thing].value) for thing in theta if not theta[thing].vary]
         nwalkers=200
-        nsteps=1000
+        nsteps=30000
 
 
 
