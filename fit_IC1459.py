@@ -3,14 +3,13 @@
 ##############################################################################
 import numpy as np
 
-#from stellarpops.tools import fspTools as FT
+
 import emcee3
 import os
 import argparse
 
-
+import scipy.interpolate as si 
 from astropy.io import fits
-
 from astropy.wcs import WCS
 
 import lmfit_SPV as LMSPV
@@ -21,6 +20,7 @@ import SpectralFitting_functs as SF
 from schwimmbad import MPIPool
 
 
+print 'Starting!'
 
 
 #Likelihood function here: saves pickling the parameters dictionary
@@ -79,7 +79,6 @@ K_err=K_data[2].data
 
 
 #Interpolate the KMOS data to be on the MUSE wavelength grid
-import scipy.interpolate as si 
 new_K_lam=K_lam[0]+1.25*np.arange((K_lam[-1]-K_lam[0])/1.25)
 
 interp_spec=si.interp1d(K_lam, K_spec, kind='cubic')
@@ -151,15 +150,16 @@ string_fit_wavelengths=["{} to {}".format(pair[0], pair[1]) for pair in fit_wave
 #FWHM. Should make a way to measure this!
 FWHM_gal=2.5
 
+print 'Done all the preliminaries'
+
 # #Set up the parameters
-fit=SpectralFitting.SpectralFit(lamdas, flux, errors, pixel_weights, fit_wavelengths, FWHM_gal, instrumental_resolution=instrumental_resolution, skyspecs=None, element_imf=element_imf)
-fit.set_up_fit()
-
-
-
-
 with MPIPool() as pool:
     if not pool.is_master():
+
+
+        print 'Setting up the fit'
+        fit=SpectralFitting.SpectralFit(lamdas, flux, errors, pixel_weights, fit_wavelengths, FWHM_gal, instrumental_resolution=instrumental_resolution, skyspecs=None, element_imf=element_imf)
+        fit.set_up_fit()
 
         theta=LMSPV.Parameters()
         theta.add('Vel', value=1800.91, min=-1000.0, max=10000.0)
