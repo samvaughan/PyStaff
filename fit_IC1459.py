@@ -154,9 +154,9 @@ print 'Done all the preliminaries'
 
 # #Set up the parameters
 with MPIPool() as pool:
-        if not pool.is_master():
-            pool.wait()
-            sys.exit(0)
+    if not pool.is_master():
+        pool.wait()
+        sys.exit(0)
 
 
 
