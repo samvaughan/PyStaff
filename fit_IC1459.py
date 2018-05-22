@@ -163,7 +163,7 @@ with MPIPool() as pool:
     print 'Setting up the fit'
     fit=SpectralFitting.SpectralFit(lamdas, flux, errors, pixel_weights, fit_wavelengths, FWHM_gal, instrumental_resolution=instrumental_resolution, skyspecs=None, element_imf=element_imf)
     fit.set_up_fit()
-    parameters=fit.fit_settings
+    parameters=fit.fit_settings.copy()
 
     theta=LMSPV.Parameters()
     theta.add('Vel', value=1800.91, min=-1000.0, max=10000.0)
