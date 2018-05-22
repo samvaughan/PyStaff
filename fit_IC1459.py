@@ -278,7 +278,7 @@ with MPIPool() as pool:
     fname='attempt1_centre.h5'
     backend=emcee3.backends.HDFBackend(fname)
 
-    sampler = emcee3.EnsembleSampler(nwalkers, ndim, lnprob, args=[theta, variables, bounds], backend=backend, pool=None)
+    sampler = emcee3.EnsembleSampler(nwalkers, ndim, lnprob, args=[theta, variables, bounds], backend=backend, pool=pool)
     result=sampler.run_mcmc(p0.T, nsteps, progress=True)
 
     #SF.lnlike(theta, fit.fit_settings)
