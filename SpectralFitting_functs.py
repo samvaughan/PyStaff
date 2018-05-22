@@ -4,7 +4,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import numpy as np 
 import scipy.constants as const
-import ppxf_util as util
 
 from stellarpops.tools import fspTools as FT
 
@@ -45,23 +44,23 @@ def rebin_MUSE_spectrum(lamdas, flux, errors, pixel_weights, instrumental_resolu
     
 
     #Log rebin them
-    galaxy, logLam, velscale = util.log_rebin(lam_range_gal, flux)
-    noise, _, _=util.log_rebin(lam_range_gal, errors, velscale=velscale) 
-    weights, _, _=util.log_rebin(lam_range_gal, pixel_weights, velscale=velscale)
+    galaxy, logLam, velscale = log_rebin(lam_range_gal, flux)
+    noise, _, _=log_rebin(lam_range_gal, errors, velscale=velscale) 
+    weights, _, _=log_rebin(lam_range_gal, pixel_weights, velscale=velscale)
     #import pdb; pdb.set_trace()
 
     all_sky=None
     if skyspecs is not None:
-        O2_sky, _, _=util.log_rebin(lam_range_gal, skyspecs[0, :], velscale=velscale)
-        sky, _, _=util.log_rebin(lam_range_gal, skyspecs[1, :], velscale=velscale) 
-        OH_sky, _, _=util.log_rebin(lam_range_gal, skyspecs[2, :], velscale=velscale)
-        NaD_sky, _, _=util.log_rebin(lam_range_gal, skyspecs[3, :], velscale=velscale)
+        O2_sky, _, _=log_rebin(lam_range_gal, skyspecs[0, :], velscale=velscale)
+        sky, _, _=log_rebin(lam_range_gal, skyspecs[1, :], velscale=velscale) 
+        OH_sky, _, _=log_rebin(lam_range_gal, skyspecs[2, :], velscale=velscale)
+        NaD_sky, _, _=log_rebin(lam_range_gal, skyspecs[3, :], velscale=velscale)
 
         all_sky=np.array([O2_sky, sky, OH_sky, NaD_sky])
 
     log_inst_res=None
     if instrumental_resolution is not None:
-        log_inst_res, _, _=util.log_rebin(lam_range_gal, instrumental_resolution, velscale=velscale)
+        log_inst_res, _, _=log_rebin(lam_range_gal, instrumental_resolution, velscale=velscale)
 
 
     goodpixels = np.arange(len(galaxy))     
@@ -438,7 +437,7 @@ def lnlike(theta, parameters, plot=False, ret_specs=False):
 
     #Convolve with the instrumental resolution
     if instrumental_resolution is not None:
-        temp=util.gaussian_filter1d(temp, instrumental_resolution/velscale)
+        temp=gaussian_filter1d(temp, instrumental_resolution/velscale)
         #Bit hacky
         #Replace the first and last few values of temp (which get set to zero by the convolution)
         #to the median value of the whole thing
@@ -723,3 +722,140 @@ def emission_lines(logLam_temp, lamRange_gal, FWHM_gal, quiet=True):
     return emission_lines, line_names, line_wave
 
 ###############################################################################
+
+
+###############################################################################
+#
+# NAME:
+#   LOG_REBIN
+#
+# MODIFICATION HISTORY:
+#   V1.0.0: Using interpolation. Michele Cappellari, Leiden, 22 October 2001
+#   V2.0.0: Analytic flux conservation. MC, Potsdam, 15 June 2003
+#   V2.1.0: Allow a velocity scale to be specified by the user.
+#       MC, Leiden, 2 August 2003
+#   V2.2.0: Output the optional logarithmically spaced wavelength at the
+#       geometric mean of the wavelength at the border of each pixel.
+#       Thanks to Jesus Falcon-Barroso. MC, Leiden, 5 November 2003
+#   V2.2.1: Verify that lamRange[0] < lamRange[1].
+#       MC, Vicenza, 29 December 2004
+#   V2.2.2: Modified the documentation after feedback from James Price.
+#       MC, Oxford, 21 October 2010
+#   V2.3.0: By default now preserve the shape of the spectrum, not the
+#       total flux. This seems what most users expect from the procedure.
+#       Set the keyword /FLUX to preserve flux like in previous version.
+#       MC, Oxford, 30 November 2011
+#   V3.0.0: Translated from IDL into Python. MC, Santiago, 23 November 2013
+#   V3.1.0: Fully vectorized log_rebin. Typical speed up by two orders of magnitude.
+#       MC, Oxford, 4 March 2014
+#   V3.1.1: Updated documentation. MC, Oxford, 16 August 2016
+
+def log_rebin(lamRange, spec, oversample=1, velscale=None, flux=False):
+    """
+    Logarithmically rebin a spectrum, while rigorously conserving the flux.
+    Basically the photons in the spectrum are simply redistributed according
+    to a new grid of pixels, with non-uniform size in the spectral direction.
+    
+    When the flux keyword is set, this program performs an exact integration 
+    of the original spectrum, assumed to be a step function within the 
+    linearly-spaced pixels, onto the new logarithmically-spaced pixels. 
+    The output was tested to agree with the analytic solution.
+
+    :param lamRange: two elements vector containing the central wavelength
+        of the first and last pixels in the spectrum, which is assumed
+        to have constant wavelength scale! E.g. from the values in the
+        standard FITS keywords: LAMRANGE = CRVAL1 + [0, CDELT1*(NAXIS1 - 1)].
+        It must be LAMRANGE[0] < LAMRANGE[1].
+    :param spec: input spectrum.
+    :param oversample: can be used, not to loose spectral resolution,
+        especally for extended wavelength ranges and to avoid aliasing.
+        Default: OVERSAMPLE=1 ==> Same number of output pixels as input.
+    :param velscale: velocity scale in km/s per pixels. If this variable is
+        not defined, then it will contain in output the velocity scale.
+        If this variable is defined by the user it will be used
+        to set the output number of pixels and wavelength scale.
+    :param flux: (boolean) True to preserve total flux. In this case the
+        log rebinning changes the pixels flux in proportion to their
+        dLam so the following command will show large differences
+        beween the spectral shape before and after LOG_REBIN:
+           plt.plot(exp(logLam), specNew)  # Plot log-rebinned spectrum
+           plt.plot(np.linspace(lamRange[0], lamRange[1], spec.size), spec)
+        By defaul, when this is False, the above two lines produce
+        two spectra that almost perfectly overlap each other.
+    :return: [specNew, logLam, velscale] where logLam is the natural
+        logarithm of the wavelength and velscale is in km/s.
+
+    """
+    lamRange = np.asarray(lamRange)
+    assert len(lamRange) == 2, 'lamRange must contain two elements'
+    assert lamRange[0] < lamRange[1], 'It must be lamRange[0] < lamRange[1]'
+    assert spec.ndim == 1, 'input spectrum must be a vector'
+    n = spec.shape[0]
+    m = int(n*oversample)
+
+    dLam = np.diff(lamRange)/(n - 1.)        # Assume constant dLam
+    lim = lamRange/dLam + [-0.5, 0.5]        # All in units of dLam
+    borders = np.linspace(*lim, num=n+1)     # Linearly
+    logLim = np.log(lim)
+
+    c = 299792.458                           # Speed of light in km/s
+    if velscale is None:                     # Velocity scale is set by user
+        velscale = np.diff(logLim)/m*c       # Only for output
+    else:
+        logScale = velscale/c
+        m = int(np.diff(logLim)/logScale)    # Number of output pixels
+        logLim[1] = logLim[0] + m*logScale
+
+    newBorders = np.exp(np.linspace(*logLim, num=m+1)) # Logarithmically
+    k = (newBorders - lim[0]).clip(0, n-1).astype(int)
+
+    specNew = np.add.reduceat(spec, k)[:-1]  # Do analytic integral
+    specNew *= np.diff(k) > 0    # fix for design flaw of reduceat()
+    specNew += np.diff((newBorders - borders[k])*spec[k])
+
+    if not flux:
+        specNew /= np.diff(newBorders)
+
+    # Output log(wavelength): log of geometric mean
+    logLam = np.log(np.sqrt(newBorders[1:]*newBorders[:-1])*dLam)
+
+    return specNew, logLam, velscale
+
+###############################################################################
+# NAME:
+#   GAUSSIAN_FILTER1D
+#
+# MODIFICATION HISTORY:
+#   V1.0.0: Written as a replacement for the Scipy routine with the same name,
+#       to be used with variable sigma per pixel. MC, Oxford, 10 October 2015
+
+def gaussian_filter1d(spec, sig):
+    """
+    Convolve a spectrum by a Gaussian with different sigma for every pixel.
+    If all sigma are the same this routine produces the same output as
+    scipy.ndimage.gaussian_filter1d, except for the border treatment.
+    Here the first/last p pixels are filled with zeros.
+    When creating a template library for SDSS data, this implementation
+    is 60x faster than a naive for loop over pixels.
+
+    :param spec: vector with the spectrum to convolve
+    :param sig: vector of sigma values (in pixels) for every pixel
+    :return: spec convolved with a Gaussian with dispersion sig
+
+    """
+    sig = sig.clip(0.01)  # forces zero sigmas to have 0.01 pixels
+    p = int(np.ceil(np.max(3*sig)))
+    m = 2*p + 1  # kernel size
+    x2 = np.linspace(-p, p, m)**2
+
+    n = spec.size
+    a = np.zeros((m, n))
+    for j in range(m):   # Loop over the small size of the kernel
+        a[j, p:-p] = spec[j:n-m+j+1]
+
+    gau = np.exp(-x2[:, None]/(2*sig**2))
+    gau /= np.sum(gau, 0)[None, :]  # Normalize kernel
+
+    conv_spectrum = np.sum(a*gau, 0)
+
+    return conv_spectrum
