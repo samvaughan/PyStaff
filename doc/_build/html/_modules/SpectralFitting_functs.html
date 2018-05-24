@@ -185,7 +185,7 @@
 
     <span class="k">return</span> <span class="n">ball</span></div>
 
-<span class="k">def</span> <span class="nf">make_mask</span><span class="p">(</span><span class="n">lamdas</span><span class="p">,</span> <span class="n">wavelengths</span><span class="p">):</span>
+<div class="viewcode-block" id="make_mask"><a class="viewcode-back" href="../source/SpectralFitting_functs.html#SpectralFitting_functs.make_mask">[docs]</a><span class="k">def</span> <span class="nf">make_mask</span><span class="p">(</span><span class="n">lamdas</span><span class="p">,</span> <span class="n">wavelengths</span><span class="p">):</span>
 
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Make a boolean mask which is False between each pair of wavelengths and True outside them.</span>
@@ -203,7 +203,7 @@
         <span class="n">low</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="n">pair</span>
         <span class="n">mask</span> <span class="o">=</span> <span class="n">mask</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">lamdas</span><span class="o">&lt;</span><span class="n">low</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">lamdas</span><span class="o">&gt;</span><span class="n">high</span><span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">mask</span>
+    <span class="k">return</span> <span class="n">mask</span></div>
 
 <div class="viewcode-block" id="contiguous_zeros"><a class="viewcode-back" href="../source/SpectralFitting_functs.html#SpectralFitting_functs.contiguous_zeros">[docs]</a><span class="k">def</span> <span class="nf">contiguous_zeros</span><span class="p">(</span><span class="n">a</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -211,13 +211,11 @@
 <span class="sd">    weights which we&#39;ve masked as zeros. </span>
 <span class="sd">    This is taken from https://stackoverflow.com/questions/24885092/finding-the-consecutive-zeros-in-a-numpy-array</span>
 <span class="sd">    </span>
-<span class="sd">    For example::</span>
+<span class="sd">    For example:</span>
 <span class="sd">        a = [1, 2, 3, 0, 0, 0, 0, 0, 0, 4, 5, 6, 0, 0, 0, 0, 9, 8, 7, 0, 10, 11]</span>
 <span class="sd">    </span>
-<span class="sd">    would return::</span>
-<span class="sd">        array([[ 3,  9],</span>
-<span class="sd">           [12, 16],</span>
-<span class="sd">           [19, 20]])</span>
+<span class="sd">    would return:</span>
+<span class="sd">        array([[ 3,  9], [12, 16], [19, 20]])</span>
 
 <span class="sd">    Arguments: </span>
 <span class="sd">        a (Boolean array): A Boolean array</span>
@@ -233,7 +231,22 @@
 
 <div class="viewcode-block" id="plot_fit"><a class="viewcode-back" href="../source/SpectralFitting_functs.html#SpectralFitting_functs.plot_fit">[docs]</a><span class="k">def</span> <span class="nf">plot_fit</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="n">parameters</span><span class="p">,</span> <span class="n">fig</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">axs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;b&#39;</span><span class="p">):</span>
 
-    <span class="c1">#c_light=const.c/1000.0</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Given a set of fit values, plot the data, the model and the errors nicely.</span>
+
+<span class="sd">    Arguments:</span>
+<span class="sd">        theta (lmfit Parameters object): The values of the fit</span>
+<span class="sd">        parameters (dict): A dictionary containing the flux, noise, etc. TODO: Clean this up!</span>
+<span class="sd">        fig (matplotlib figure): Default is None. A figure object. If None, create a new one.</span>
+<span class="sd">        axs (matplotlib axis): Default is None. An axis object. If None, create a new one.</span>
+<span class="sd">        color (string): A matplotlib color string, for the colour of the model line in the plot. </span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        (tuple): A tuple containing:</span>
+<span class="sd">            * chisq (float): the value of Chi-squared for the model</span>
+<span class="sd">            * chisq_per_dof (float): Chi-squared per degree of freedom</span>
+<span class="sd">            * fig, axs (tuple): A tuple of the matplotlib figure and axes objects</span>
+<span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">chisq</span><span class="p">,</span> <span class="n">chisq_per_dof</span><span class="p">,</span> <span class="p">[</span><span class="n">lams</span><span class="p">,</span> <span class="n">temps</span><span class="p">,</span> <span class="n">errors</span><span class="p">,</span> <span class="n">specs</span><span class="p">,</span> <span class="n">skies</span><span class="p">,</span> <span class="n">emission_lines</span><span class="p">,</span> <span class="n">polys</span><span class="p">,</span> <span class="n">w</span><span class="p">]</span><span class="o">=</span><span class="n">lnlike</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="n">parameters</span><span class="p">,</span> <span class="n">ret_specs</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
@@ -340,6 +353,21 @@
 
 <div class="viewcode-block" id="get_best_fit_template"><a class="viewcode-back" href="../source/SpectralFitting_functs.html#SpectralFitting_functs.get_best_fit_template">[docs]</a><span class="k">def</span> <span class="nf">get_best_fit_template</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="n">parameters</span><span class="p">,</span> <span class="n">convolve</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
 
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Given a set of values for each of the parameters in the fit, make a model which we can compare to the data</span>
+<span class="sd">    </span>
+<span class="sd">    Arguments:</span>
+<span class="sd">        theta (lmfit Parameters): An lmfit Parameters object</span>
+<span class="sd">        parameters (dict): A dictionary containing... TODO: Rename this and tidy up!</span>
+<span class="sd">        convolve (bool): Default is True. Convolve the model with the Line of sight velocity distribution? Or leave unconvolved</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        (tuple): A tuple containing:</span>
+<span class="sd">            * loglams (array): log-rebinned wavelength array</span>
+<span class="sd">            * template (array): the model array to be compared to the data</span>
+<span class="sd">            * base_template (array): the model array but *without* including variation in any chemical abundances. This model only includes </span>
+<span class="sd">                variation in stellar age, metallicity and the two IMF parameters. </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="n">c_light</span><span class="o">=</span><span class="n">const</span><span class="o">.</span><span class="n">c</span><span class="o">/</span><span class="mf">1000.0</span>
 
     <span class="c1">#Unpack the parameters</span>
@@ -377,13 +405,13 @@
     <span class="c1">#NaD_sky_scale=theta[&#39;NaD_sky_scale&#39;].value</span>
 
     <span class="c1">#Make the base template (age, Z, IMF)</span>
-    <span class="n">base_template</span><span class="o">=</span><span class="n">make_model</span><span class="p">(</span><span class="n">age</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">imf_x1</span><span class="p">,</span> <span class="n">imf_x2</span><span class="p">,</span> <span class="n">interp_funct</span><span class="p">,</span> <span class="n">logLams</span><span class="p">)</span>
+    <span class="n">base_template</span><span class="o">=</span><span class="n">_make_model</span><span class="p">(</span><span class="n">age</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">imf_x1</span><span class="p">,</span> <span class="n">imf_x2</span><span class="p">,</span> <span class="n">interp_funct</span><span class="p">,</span> <span class="n">logLams</span><span class="p">)</span>
 
     <span class="c1">#Make the correction for elements which vary &gt;0.0</span>
-    <span class="n">positive_only_correction</span><span class="o">=</span><span class="n">get_correction</span><span class="p">(</span><span class="n">positive_only_interp</span><span class="p">,</span> <span class="n">logLams</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">positive_abundances</span><span class="p">)),</span> <span class="n">positive_abundances</span><span class="p">,</span> <span class="n">age</span><span class="p">,</span> <span class="n">Z</span><span class="p">)</span>
+    <span class="n">positive_only_correction</span><span class="o">=</span><span class="n">_get_correction</span><span class="p">(</span><span class="n">positive_only_interp</span><span class="p">,</span> <span class="n">logLams</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">positive_abundances</span><span class="p">)),</span> <span class="n">positive_abundances</span><span class="p">,</span> <span class="n">age</span><span class="p">,</span> <span class="n">Z</span><span class="p">)</span>
 
     <span class="c1">#Response function for general element corrections</span>
-    <span class="n">general_correction</span><span class="o">=</span><span class="n">get_correction</span><span class="p">(</span><span class="n">general_interp</span><span class="p">,</span> <span class="n">logLams</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">general_abundances</span><span class="p">)),</span> <span class="n">general_abundances</span><span class="p">,</span> <span class="n">age</span><span class="p">,</span> <span class="n">Z</span><span class="p">)</span>   
+    <span class="n">general_correction</span><span class="o">=</span><span class="n">_get_correction</span><span class="p">(</span><span class="n">general_interp</span><span class="p">,</span> <span class="n">logLams</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">general_abundances</span><span class="p">)),</span> <span class="n">general_abundances</span><span class="p">,</span> <span class="n">age</span><span class="p">,</span> <span class="n">Z</span><span class="p">)</span>   
 
     <span class="c1">#Have to treat Na differently</span>
     <span class="n">na_correction</span><span class="o">=</span><span class="n">na_interp</span><span class="p">((</span><span class="n">Na_abundance</span><span class="p">,</span> <span class="n">age</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">logLams</span><span class="p">))</span>
@@ -399,13 +427,43 @@
     <span class="k">return</span> <span class="n">logLams</span><span class="p">,</span> <span class="n">template</span><span class="p">,</span> <span class="n">base_template</span></div>
 
 
-<div class="viewcode-block" id="make_model"><a class="viewcode-back" href="../source/SpectralFitting_functs.html#SpectralFitting_functs.make_model">[docs]</a><span class="k">def</span> <span class="nf">make_model</span><span class="p">(</span><span class="n">age</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">imf_x1</span><span class="p">,</span> <span class="n">imf_x2</span><span class="p">,</span> <span class="n">interp_funct</span><span class="p">,</span> <span class="n">logLams</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_make_model</span><span class="p">(</span><span class="n">age</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">imf_x1</span><span class="p">,</span> <span class="n">imf_x2</span><span class="p">,</span> <span class="n">interp_funct</span><span class="p">,</span> <span class="n">logLams</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Make the &#39;base&#39; model from the model interpolators</span>
+<span class="sd">    </span>
+<span class="sd">    Arguments:</span>
+<span class="sd">        age (float): Stellar age</span>
+<span class="sd">        Z (float): Metallicity</span>
+<span class="sd">        imf_x1 (float): Low-mass IMF slope between 0.08M and 0.5M</span>
+<span class="sd">        imf_x2 (float): Low-mass IMF slope between 0.5M and 1.0M</span>
+<span class="sd">        interp_funct (scipy RegularGridInterpolator): Model interpolator</span>
+<span class="sd">        logLams (array): Log-rebinned wavelength array</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        (array): A model at the requried fit parameters</span>
+<span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">model</span><span class="o">=</span><span class="n">interp_funct</span><span class="p">((</span><span class="n">logLams</span><span class="p">,</span> <span class="n">age</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">imf_x1</span><span class="p">,</span> <span class="n">imf_x2</span><span class="p">))</span>
 
-    <span class="k">return</span> <span class="n">model</span></div>
+    <span class="k">return</span> <span class="n">model</span>
 
-<div class="viewcode-block" id="get_correction"><a class="viewcode-back" href="../source/SpectralFitting_functs.html#SpectralFitting_functs.get_correction">[docs]</a><span class="k">def</span> <span class="nf">get_correction</span><span class="p">(</span><span class="n">interpolator</span><span class="p">,</span> <span class="n">logLams</span><span class="p">,</span> <span class="n">elems</span><span class="p">,</span> <span class="n">abunds</span><span class="p">,</span> <span class="n">age</span><span class="p">,</span> <span class="n">Z</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_get_correction</span><span class="p">(</span><span class="n">interpolator</span><span class="p">,</span> <span class="n">logLams</span><span class="p">,</span> <span class="n">elems</span><span class="p">,</span> <span class="n">abunds</span><span class="p">,</span> <span class="n">age</span><span class="p">,</span> <span class="n">Z</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get the response function we apply to our base model</span>
+
+
+
+<span class="sd">    Arguments:</span>
+<span class="sd">        interpolator (scipy RegularGridInterpolator): An interpolator for the required correction</span>
+<span class="sd">        logLams (array): Log-rebinned wavelength array</span>
+<span class="sd">        elems (array): A vector of integers corresponding to the elements we want to vary</span>
+<span class="sd">        abunds (array): A vector of abundances for each element we&#39;re varying</span>
+<span class="sd">        age (float): Stellar age</span>
+<span class="sd">        Z (float): Metallicity</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c1">#The interpolator expects a list of 6 numbers. Meshgrid the two arrays which are of different lengths</span>
     <span class="c1"># (the indices and the number of elements to enhance) and then create lists of ages, Zs and IMFs of the correct</span>
@@ -431,51 +489,29 @@
     <span class="c1">#reshape everything to be (len(indices), len(elements))</span>
     <span class="n">result</span> <span class="o">=</span> <span class="n">out_array</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">*</span><span class="n">points</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 
 
 
-<div class="viewcode-block" id="convolve_template_with_losvd"><a class="viewcode-back" href="../source/SpectralFitting_functs.html#SpectralFitting_functs.convolve_template_with_losvd">[docs]</a><span class="k">def</span> <span class="nf">convolve_template_with_losvd</span><span class="p">(</span><span class="n">template</span><span class="p">,</span> <span class="n">vel</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">velscale</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">vsyst</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
 
-    <span class="n">t_rfft</span><span class="p">,</span> <span class="n">npad</span><span class="o">=</span><span class="n">_templates_rfft</span><span class="p">(</span><span class="n">template</span><span class="p">)</span>
-    <span class="n">losvd_rfft</span><span class="o">=</span><span class="n">_losvd_rfft</span><span class="p">(</span><span class="n">vel</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">npad</span><span class="p">,</span> <span class="n">velscale</span><span class="p">,</span> <span class="n">npad</span><span class="p">,</span> <span class="n">vsyst</span><span class="o">=</span><span class="n">vsyst</span><span class="p">)</span>
-
-    <span class="n">convolved_t</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">irfft</span><span class="p">(</span><span class="n">t_rfft</span><span class="o">*</span><span class="n">losvd_rfft</span><span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">convolved_t</span></div>
-
-
-<span class="k">def</span> <span class="nf">_losvd_rfft</span><span class="p">(</span><span class="n">vel</span><span class="p">,</span> <span class="n">sig</span><span class="p">,</span> <span class="n">pad</span><span class="p">,</span> <span class="n">velscale</span><span class="p">,</span> <span class="n">npad</span><span class="p">,</span> <span class="n">vsyst</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
-
-
-    <span class="n">nl</span> <span class="o">=</span> <span class="n">npad</span><span class="o">//</span><span class="mi">2</span> <span class="o">+</span> <span class="mi">1</span>
-
-    <span class="n">vel</span><span class="o">=</span><span class="p">(</span><span class="n">vel</span><span class="o">+</span><span class="n">vsyst</span><span class="p">)</span><span class="o">/</span><span class="n">velscale</span>
-    <span class="n">sig</span><span class="o">/=</span><span class="n">velscale</span>
-
-
-
-    <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">vel</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">])</span><span class="o">/</span><span class="n">sig</span>
-
-    <span class="n">w</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">sig</span><span class="p">,</span> <span class="n">nl</span><span class="p">)</span>
-    <span class="c1">#analytic FFT of LOSVD</span>
-    <span class="n">losvd_rfft</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="mi">1</span><span class="n">j</span><span class="o">*</span><span class="n">a</span><span class="o">*</span><span class="n">w</span> <span class="o">-</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">b</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="n">w</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">conj</span><span class="p">(</span><span class="n">losvd_rfft</span><span class="p">)</span>
-
-    
-
-<span class="k">def</span> <span class="nf">_templates_rfft</span><span class="p">(</span><span class="n">templates</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Pre-compute the FFT (of real input) of all templates</span>
-
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">npad</span> <span class="o">=</span> <span class="mi">2</span><span class="o">**</span><span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log2</span><span class="p">(</span><span class="n">templates</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])))</span>
-    <span class="n">templates_rfft</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">rfft</span><span class="p">(</span><span class="n">templates</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="n">npad</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">templates_rfft</span><span class="p">,</span> <span class="n">npad</span>
 
 <div class="viewcode-block" id="get_linear_best_fit_template"><a class="viewcode-back" href="../source/SpectralFitting_functs.html#SpectralFitting_functs.get_linear_best_fit_template">[docs]</a><span class="k">def</span> <span class="nf">get_linear_best_fit_template</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="n">parameters</span><span class="p">,</span> <span class="n">fit_class</span><span class="p">,</span> <span class="n">convole</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get the best-fit template on a *linear* wavelength scale by interpolating the log-lambda template.</span>
+<span class="sd">    This is required when calculating the luminosity of a template through a filter. </span>
+
+<span class="sd">    Arguments:</span>
+<span class="sd">        theta (lmfit Parameters): An lmfit Parameters object</span>
+<span class="sd">        parameters (dict): A dictionary containing... TODO: Rename this and tidy up!</span>
+<span class="sd">        fit_class: TODO</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        (tuple): tuple containing:</span>
+<span class="sd">            * lin_template (array): the model array to be compared to the data, on a linear wavelength scale</span>
+<span class="sd">            * lin_base_template (array): the model array but *without* including variation in any chemical abundances, on a linear wavelength scale. This model only includes </span>
+<span class="sd">                variation in stellar age, metallicity and the two IMF parameters. </span>
+<span class="sd">    &quot;&quot;&quot;</span>
 
 
     <span class="n">logLams</span><span class="p">,</span> <span class="n">template</span><span class="p">,</span> <span class="n">base_template</span><span class="o">=</span><span class="n">get_best_fit_template</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="n">parameters</span><span class="p">,</span> <span class="n">convolve</span><span class="o">=</span><span class="n">convole</span><span class="p">)</span>
@@ -493,7 +529,19 @@
 <div class="viewcode-block" id="lnlike"><a class="viewcode-back" href="../source/SpectralFitting_functs.html#SpectralFitting_functs.lnlike">[docs]</a><span class="k">def</span> <span class="nf">lnlike</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="n">parameters</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">ret_specs</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
 
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    (log) Likelihood function</span>
+<span class="sd">    The log-Likelihood function of the fitting</span>
+<span class="sd">    TODO: Add more here!</span>
+<span class="sd">    Arguments:</span>
+<span class="sd">        theta (lmfit Parameters): An lmfit Parameters object</span>
+<span class="sd">        parameters (dict): A dictionary containing... TODO: Rename this and tidy up!</span>
+<span class="sd">        plot (Boolean): Deprecated. TODO remove</span>
+<span class="sd">        ret_specs (boolean): Default is False. If True, return a series of spectra made during the fitting process</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        * likelihood (float): The log-likelihood of the fit parameters</span>
+<span class="sd">        if ret_specs is True, also return:</span>
+<span class="sd">        * TODO List all these</span>
+<span class="sd">        * likelihood, -1.0*likelihood/n_dof, [lam, t, e, s, skies, g_lines, p, w]  </span>
+
 <span class="sd">    &quot;&quot;&quot;</span> 
 
 
@@ -668,7 +716,7 @@
         
         <span class="c1">#Fit the polynomials, weighting by the noise</span>
         <span class="c1">#poly=C.fit_continuum(gmask[0], g/t, n**2, clip=[2, 10.0, 10.0], order=morder)</span>
-        <span class="n">poly</span><span class="o">=</span><span class="n">fit_legendre_polys</span><span class="p">(</span><span class="n">g_corrected</span><span class="o">/</span><span class="n">t</span><span class="p">,</span> <span class="n">morder</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="mf">1.0</span><span class="o">/</span><span class="n">n</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">poly</span><span class="o">=</span><span class="n">_fit_legendre_polys</span><span class="p">(</span><span class="n">g_corrected</span><span class="o">/</span><span class="n">t</span><span class="p">,</span> <span class="n">morder</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="mf">1.0</span><span class="o">/</span><span class="n">n</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
 
         <span class="c1">#Scale the noise by some fraction ln_f</span>
         <span class="n">n_corrected</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="mi">1</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">ln_f</span><span class="p">))</span><span class="o">*</span><span class="n">n</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>         
@@ -730,12 +778,19 @@
     <span class="k">return</span> <span class="n">likelihood</span></div>
 
 
-<div class="viewcode-block" id="init"><a class="viewcode-back" href="../source/SpectralFitting_functs.html#SpectralFitting_functs.init">[docs]</a><span class="k">def</span> <span class="nf">init</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    
-    <span class="k">global</span> <span class="n">parameters</span><span class="p">,</span> <span class="n">logLam</span>
-    <span class="n">parameters</span><span class="p">,</span> <span class="n">logLam</span><span class="p">,</span> <span class="n">ndim</span><span class="o">=</span><span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="fit_legendre_polys"><a class="viewcode-back" href="../source/SpectralFitting_functs.html#SpectralFitting_functs.fit_legendre_polys">[docs]</a><span class="k">def</span> <span class="nf">fit_legendre_polys</span><span class="p">(</span><span class="n">ratio</span><span class="p">,</span> <span class="n">morder</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_fit_legendre_polys</span><span class="p">(</span><span class="n">ratio</span><span class="p">,</span> <span class="n">morder</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Fit a legendre polynomial to the ratio of the data to the model, optionally weighting by the noise</span>
+
+<span class="sd">    Arguments: </span>
+<span class="sd">        ratio (array): Ratio of the data to the model spectrum.</span>
+<span class="sd">        morder (int): Order of the polynomial</span>
+<span class="sd">        weights (optional, array): Default is None. Weights for each value for the polynomial fitting</span>
+<span class="sd">    Returns: </span>
+<span class="sd">        (array): The polynomial value at each wavelength location</span>
+<span class="sd">    &quot;&quot;&quot;</span>
 
 
     <span class="n">x_vals</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">ratio</span><span class="p">))</span>
@@ -743,42 +798,75 @@
 
     <span class="n">polynomial</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">polynomial</span><span class="o">.</span><span class="n">legendre</span><span class="o">.</span><span class="n">legval</span><span class="p">(</span><span class="n">x_vals</span><span class="p">,</span> <span class="n">coeffs</span><span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">polynomial</span></div>
-
-<div class="viewcode-block" id="make_mask"><a class="viewcode-back" href="../source/SpectralFitting_functs.html#SpectralFitting_functs.make_mask">[docs]</a><span class="k">def</span> <span class="nf">make_mask</span><span class="p">(</span><span class="n">lamdas</span><span class="p">,</span> <span class="n">wavelengths</span><span class="p">):</span>
-    <span class="n">mask</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">lamdas</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">pair</span> <span class="ow">in</span> <span class="n">wavelengths</span><span class="p">:</span>
-        <span class="n">low</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="n">pair</span>
-        <span class="c1">#import pdb; pdb.set_trace()</span>
-        <span class="n">mask</span> <span class="o">=</span> <span class="n">mask</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">lamdas</span><span class="o">&lt;</span><span class="n">low</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">lamdas</span><span class="o">&gt;</span><span class="n">high</span><span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">mask</span></div>
+    <span class="k">return</span> <span class="n">polynomial</span>
 
 
-<span class="c1">###############################################################################</span>
-<span class="c1">#FUNCTIONS TAKEN FROM MICHELE CAPPELLARI&#39;S pPXF CODE</span>
-<span class="c1">#</span>
-<span class="c1"># Copyright (C) 2001-2016, Michele Cappellari</span>
-<span class="c1"># E-mail: michele.cappellari_at_physics.ox.ac.uk</span>
-<span class="c1">#</span>
-<span class="c1"># Updated versions of the software are available from my web page</span>
-<span class="c1"># http://purl.org/cappellari/software</span>
-<span class="c1">#</span>
-<span class="c1"># If you have found this software useful for your research,</span>
-<span class="c1"># I would appreciate an acknowledgment to the use of the</span>
-<span class="c1"># &quot;Penalized Pixel-Fitting method by Cappellari &amp; Emsellem (2004)&quot;</span>
-<span class="c1">#  and/or &quot;by Cappellari (2017)&quot; if you use the new features.</span>
-<span class="c1">#</span>
-<span class="c1"># This software is provided as is without any warranty whatsoever.</span>
-<span class="c1"># Permission to use, for non-commercial purposes is granted.</span>
-<span class="c1"># Permission to modify for personal or internal use is granted,</span>
-<span class="c1"># provided this copyright and disclaimer are included unchanged</span>
-<span class="c1"># at the beginning of the file. All other rights are reserved.</span>
-<span class="c1">#</span>
-<span class="c1">################################################################################</span>
+<div class="viewcode-block" id="init"><a class="viewcode-back" href="../source/SpectralFitting_functs.html#SpectralFitting_functs.init">[docs]</a><span class="k">def</span> <span class="nf">init</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    
+    <span class="k">global</span> <span class="n">parameters</span><span class="p">,</span> <span class="n">logLam</span>
+    <span class="n">parameters</span><span class="p">,</span> <span class="n">logLam</span><span class="p">,</span> <span class="n">ndim</span><span class="o">=</span><span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+
+
+
+
+<div class="viewcode-block" id="convolve_template_with_losvd"><a class="viewcode-back" href="../source/SpectralFitting_functs.html#SpectralFitting_functs.convolve_template_with_losvd">[docs]</a><span class="k">def</span> <span class="nf">convolve_template_with_losvd</span><span class="p">(</span><span class="n">template</span><span class="p">,</span> <span class="n">vel</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">velscale</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">vsyst</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    **From Michele Cappellari&#39;s PPXF code**</span>
+
+<span class="sd">    Given a template, convolve it with a line-of-sight velocity distribution. </span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">t_rfft</span><span class="p">,</span> <span class="n">npad</span><span class="o">=</span><span class="n">_templates_rfft</span><span class="p">(</span><span class="n">template</span><span class="p">)</span>
+    <span class="n">losvd_rfft</span><span class="o">=</span><span class="n">_losvd_rfft</span><span class="p">(</span><span class="n">vel</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">npad</span><span class="p">,</span> <span class="n">velscale</span><span class="p">,</span> <span class="n">npad</span><span class="p">,</span> <span class="n">vsyst</span><span class="o">=</span><span class="n">vsyst</span><span class="p">)</span>
+
+    <span class="n">convolved_t</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">irfft</span><span class="p">(</span><span class="n">t_rfft</span><span class="o">*</span><span class="n">losvd_rfft</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">convolved_t</span></div>
+
+
+<span class="k">def</span> <span class="nf">_losvd_rfft</span><span class="p">(</span><span class="n">vel</span><span class="p">,</span> <span class="n">sig</span><span class="p">,</span> <span class="n">pad</span><span class="p">,</span> <span class="n">velscale</span><span class="p">,</span> <span class="n">npad</span><span class="p">,</span> <span class="n">vsyst</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    **From Michele Cappellari&#39;s PPXF code**</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+
+    <span class="n">nl</span> <span class="o">=</span> <span class="n">npad</span><span class="o">//</span><span class="mi">2</span> <span class="o">+</span> <span class="mi">1</span>
+
+    <span class="n">vel</span><span class="o">=</span><span class="p">(</span><span class="n">vel</span><span class="o">+</span><span class="n">vsyst</span><span class="p">)</span><span class="o">/</span><span class="n">velscale</span>
+    <span class="n">sig</span><span class="o">/=</span><span class="n">velscale</span>
+
+
+
+    <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">vel</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">])</span><span class="o">/</span><span class="n">sig</span>
+
+    <span class="n">w</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">sig</span><span class="p">,</span> <span class="n">nl</span><span class="p">)</span>
+    <span class="c1">#analytic FFT of LOSVD</span>
+    <span class="n">losvd_rfft</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="mi">1</span><span class="n">j</span><span class="o">*</span><span class="n">a</span><span class="o">*</span><span class="n">w</span> <span class="o">-</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">b</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="n">w</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">conj</span><span class="p">(</span><span class="n">losvd_rfft</span><span class="p">)</span>
+
+    
+
+<span class="k">def</span> <span class="nf">_templates_rfft</span><span class="p">(</span><span class="n">templates</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    **From Michele Cappellari&#39;s PPXF code**</span>
+<span class="sd">    Pre-compute the FFT (of real input) of all templates</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">npad</span> <span class="o">=</span> <span class="mi">2</span><span class="o">**</span><span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log2</span><span class="p">(</span><span class="n">templates</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])))</span>
+    <span class="n">templates_rfft</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">rfft</span><span class="p">(</span><span class="n">templates</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="n">npad</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">templates_rfft</span><span class="p">,</span> <span class="n">npad</span>
+
 
 <div class="viewcode-block" id="emline"><a class="viewcode-back" href="../source/SpectralFitting_functs.html#SpectralFitting_functs.emline">[docs]</a><span class="k">def</span> <span class="nf">emline</span><span class="p">(</span><span class="n">logLam_temp</span><span class="p">,</span> <span class="n">line_wave</span><span class="p">,</span> <span class="n">FWHM_gal</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    **From Michele Cappellari&#39;s PPXF code**</span>
 <span class="sd">    Instrumental Gaussian line spread function integrated within the</span>
 <span class="sd">    pixels borders. The function is normalized in such a way that</span>
 
@@ -829,6 +917,7 @@
 
 <div class="viewcode-block" id="emission_lines"><a class="viewcode-back" href="../source/SpectralFitting_functs.html#SpectralFitting_functs.emission_lines">[docs]</a><span class="k">def</span> <span class="nf">emission_lines</span><span class="p">(</span><span class="n">logLam_temp</span><span class="p">,</span> <span class="n">lamRange_gal</span><span class="p">,</span> <span class="n">FWHM_gal</span><span class="p">,</span> <span class="n">quiet</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    **From Michele Cappellari&#39;s PPXF code**</span>
 <span class="sd">    Generates an array of Gaussian emission lines to be used as gas templates in PPXF.</span>
 <span class="sd">    These templates represent the instrumental line spread function (LSF) at the</span>
 <span class="sd">    set of wavelengths of each emission line.</span>
@@ -937,6 +1026,7 @@
 
 <div class="viewcode-block" id="log_rebin"><a class="viewcode-back" href="../source/SpectralFitting_functs.html#SpectralFitting_functs.log_rebin">[docs]</a><span class="k">def</span> <span class="nf">log_rebin</span><span class="p">(</span><span class="n">lamRange</span><span class="p">,</span> <span class="n">spec</span><span class="p">,</span> <span class="n">oversample</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">velscale</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">flux</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    **From Michele Cappellari&#39;s PPXF code**</span>
 <span class="sd">    Logarithmically rebin a spectrum, while rigorously conserving the flux.</span>
 <span class="sd">    Basically the photons in the spectrum are simply redistributed according</span>
 <span class="sd">    to a new grid of pixels, with non-uniform size in the spectral direction.</span>
@@ -1016,6 +1106,7 @@
 
 <div class="viewcode-block" id="gaussian_filter1d"><a class="viewcode-back" href="../source/SpectralFitting_functs.html#SpectralFitting_functs.gaussian_filter1d">[docs]</a><span class="k">def</span> <span class="nf">gaussian_filter1d</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="n">sig</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    **From Michele Cappellari&#39;s PPXF code**</span>
 <span class="sd">    Convolve a spectrum by a Gaussian with different sigma for every pixel.</span>
 <span class="sd">    If all sigma are the same this routine produces the same output as</span>
 <span class="sd">    scipy.ndimage.gaussian_filter1d, except for the border treatment.</span>

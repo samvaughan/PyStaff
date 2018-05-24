@@ -10,7 +10,7 @@ Welcome to Py-Staff's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-
+   README <readme>
 
 
 Indices and tables

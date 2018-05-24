@@ -172,13 +172,11 @@ def contiguous_zeros(a):
     weights which we've masked as zeros. 
     This is taken from https://stackoverflow.com/questions/24885092/finding-the-consecutive-zeros-in-a-numpy-array
     
-    For example::
+    For example:
         a = [1, 2, 3, 0, 0, 0, 0, 0, 0, 4, 5, 6, 0, 0, 0, 0, 9, 8, 7, 0, 10, 11]
     
-    would return::
-        array([[ 3,  9],
-           [12, 16],
-           [19, 20]])
+    would return:
+        array([[ 3,  9], [12, 16], [19, 20]])
 
     Arguments: 
         a (Boolean array): A Boolean array
@@ -194,7 +192,22 @@ def contiguous_zeros(a):
 
 def plot_fit(theta, parameters, fig=None, axs=None, color='b'):
 
-    #c_light=const.c/1000.0
+    """
+    Given a set of fit values, plot the data, the model and the errors nicely.
+
+    Arguments:
+        theta (lmfit Parameters object): The values of the fit
+        parameters (dict): A dictionary containing the flux, noise, etc. TODO: Clean this up!
+        fig (matplotlib figure): Default is None. A figure object. If None, create a new one.
+        axs (matplotlib axis): Default is None. An axis object. If None, create a new one.
+        color (string): A matplotlib color string, for the colour of the model line in the plot. 
+    
+    Returns:
+        (tuple): A tuple containing:
+            * chisq (float): the value of Chi-squared for the model
+            * chisq_per_dof (float): Chi-squared per degree of freedom
+            * fig, axs (tuple): A tuple of the matplotlib figure and axes objects
+    """
 
     chisq, chisq_per_dof, [lams, temps, errors, specs, skies, emission_lines, polys, w]=lnlike(theta, parameters, ret_specs=True)
 
@@ -301,6 +314,21 @@ def plot_fit(theta, parameters, fig=None, axs=None, color='b'):
 
 def get_best_fit_template(theta, parameters, convolve=True):
 
+    """
+    Given a set of values for each of the parameters in the fit, make a model which we can compare to the data
+    
+    Arguments:
+        theta (lmfit Parameters): An lmfit Parameters object
+        parameters (dict): A dictionary containing... TODO: Rename this and tidy up!
+        convolve (bool): Default is True. Convolve the model with the Line of sight velocity distribution? Or leave unconvolved
+    Returns:
+        (tuple): A tuple containing:
+            * loglams (array): log-rebinned wavelength array
+            * template (array): the model array to be compared to the data
+            * base_template (array): the model array but *without* including variation in any chemical abundances. This model only includes 
+                variation in stellar age, metallicity and the two IMF parameters. 
+    """
+
     c_light=const.c/1000.0
 
     #Unpack the parameters
@@ -338,13 +366,13 @@ def get_best_fit_template(theta, parameters, convolve=True):
     #NaD_sky_scale=theta['NaD_sky_scale'].value
 
     #Make the base template (age, Z, IMF)
-    base_template=make_model(age, Z, imf_x1, imf_x2, interp_funct, logLams)
+    base_template=_make_model(age, Z, imf_x1, imf_x2, interp_funct, logLams)
 
     #Make the correction for elements which vary >0.0
-    positive_only_correction=get_correction(positive_only_interp, logLams, np.arange(len(positive_abundances)), positive_abundances, age, Z)
+    positive_only_correction=_get_correction(positive_only_interp, logLams, np.arange(len(positive_abundances)), positive_abundances, age, Z)
 
     #Response function for general element corrections
-    general_correction=get_correction(general_interp, logLams, np.arange(len(general_abundances)), general_abundances, age, Z)   
+    general_correction=_get_correction(general_interp, logLams, np.arange(len(general_abundances)), general_abundances, age, Z)   
 
     #Have to treat Na differently
     na_correction=na_interp((Na_abundance, age, Z, logLams))
@@ -360,13 +388,43 @@ def get_best_fit_template(theta, parameters, convolve=True):
     return logLams, template, base_template
 
 
-def make_model(age, Z, imf_x1, imf_x2, interp_funct, logLams):
+def _make_model(age, Z, imf_x1, imf_x2, interp_funct, logLams):
+
+    """
+    Make the 'base' model from the model interpolators
+    
+    Arguments:
+        age (float): Stellar age
+        Z (float): Metallicity
+        imf_x1 (float): Low-mass IMF slope between 0.08M and 0.5M
+        imf_x2 (float): Low-mass IMF slope between 0.5M and 1.0M
+        interp_funct (scipy RegularGridInterpolator): Model interpolator
+        logLams (array): Log-rebinned wavelength array
+
+    Returns:
+        (array): A model at the requried fit parameters
+    """
 
     model=interp_funct((logLams, age, Z, imf_x1, imf_x2))
 
     return model
 
-def get_correction(interpolator, logLams, elems, abunds, age, Z):
+def _get_correction(interpolator, logLams, elems, abunds, age, Z):
+
+    """
+    Get the response function we apply to our base model
+
+
+
+    Arguments:
+        interpolator (scipy RegularGridInterpolator): An interpolator for the required correction
+        logLams (array): Log-rebinned wavelength array
+        elems (array): A vector of integers corresponding to the elements we want to vary
+        abunds (array): A vector of abundances for each element we're varying
+        age (float): Stellar age
+        Z (float): Metallicity
+
+    """
 
     #The interpolator expects a list of 6 numbers. Meshgrid the two arrays which are of different lengths
     # (the indices and the number of elements to enhance) and then create lists of ages, Zs and IMFs of the correct
@@ -396,47 +454,25 @@ def get_correction(interpolator, logLams, elems, abunds, age, Z):
 
 
 
-def convolve_template_with_losvd(template, vel=0.0, sigma=0.0, velscale=None, vsyst=0.0):
 
-    t_rfft, npad=_templates_rfft(template)
-    losvd_rfft=_losvd_rfft(vel, sigma, npad, velscale, npad, vsyst=vsyst)
-
-    convolved_t=np.fft.irfft(t_rfft*losvd_rfft)
-
-    return convolved_t
-
-
-def _losvd_rfft(vel, sig, pad, velscale, npad, vsyst=0.0):
-
-
-    nl = npad//2 + 1
-
-    vel=(vel+vsyst)/velscale
-    sig/=velscale
-
-
-
-    a, b = np.array([vel, 0.0])/sig
-
-    w = np.linspace(0, np.pi*sig, nl)
-    #analytic FFT of LOSVD
-    losvd_rfft = np.exp(1j*a*w - 0.5*(1 + b**2)*w**2)
-
-    return np.conj(losvd_rfft)
-
-    
-
-def _templates_rfft(templates):
-    """
-    Pre-compute the FFT (of real input) of all templates
-
-    """
-    npad = 2**int(np.ceil(np.log2(templates.shape[0])))
-    templates_rfft = np.fft.rfft(templates, n=npad, axis=0)
-
-    return templates_rfft, npad
 
 def get_linear_best_fit_template(theta, parameters, fit_class, convole=True):
+
+    """
+    Get the best-fit template on a *linear* wavelength scale by interpolating the log-lambda template.
+    This is required when calculating the luminosity of a template through a filter. 
+
+    Arguments:
+        theta (lmfit Parameters): An lmfit Parameters object
+        parameters (dict): A dictionary containing... TODO: Rename this and tidy up!
+        fit_class: TODO
+
+    Returns:
+        (tuple): tuple containing:
+            * lin_template (array): the model array to be compared to the data, on a linear wavelength scale
+            * lin_base_template (array): the model array but *without* including variation in any chemical abundances, on a linear wavelength scale. This model only includes 
+                variation in stellar age, metallicity and the two IMF parameters. 
+    """
 
 
     logLams, template, base_template=get_best_fit_template(theta, parameters, convolve=convole)
@@ -454,7 +490,19 @@ def get_linear_best_fit_template(theta, parameters, fit_class, convole=True):
 def lnlike(theta, parameters, plot=False, ret_specs=False):
 
     """
-    (log) Likelihood function
+    The log-Likelihood function of the fitting
+    TODO: Add more here!
+    Arguments:
+        theta (lmfit Parameters): An lmfit Parameters object
+        parameters (dict): A dictionary containing... TODO: Rename this and tidy up!
+        plot (Boolean): Deprecated. TODO remove
+        ret_specs (boolean): Default is False. If True, return a series of spectra made during the fitting process
+    Returns:
+        * likelihood (float): The log-likelihood of the fit parameters
+        if ret_specs is True, also return:
+        * TODO List all these
+        * likelihood, -1.0*likelihood/n_dof, [lam, t, e, s, skies, g_lines, p, w]  
+
     """ 
 
 
@@ -629,7 +677,7 @@ def lnlike(theta, parameters, plot=False, ret_specs=False):
         
         #Fit the polynomials, weighting by the noise
         #poly=C.fit_continuum(gmask[0], g/t, n**2, clip=[2, 10.0, 10.0], order=morder)
-        poly=fit_legendre_polys(g_corrected/t, morder, weights=1.0/n**2)
+        poly=_fit_legendre_polys(g_corrected/t, morder, weights=1.0/n**2)
 
         #Scale the noise by some fraction ln_f
         n_corrected=np.sqrt((1+np.exp(2*ln_f))*n**2)         
@@ -691,12 +739,19 @@ def lnlike(theta, parameters, plot=False, ret_specs=False):
     return likelihood
 
 
-def init(func, *args, **kwargs):
-    
-    global parameters, logLam
-    parameters, logLam, ndim=func(*args, **kwargs)
 
-def fit_legendre_polys(ratio, morder, weights=None):
+def _fit_legendre_polys(ratio, morder, weights=None):
+
+    """
+    Fit a legendre polynomial to the ratio of the data to the model, optionally weighting by the noise
+
+    Arguments: 
+        ratio (array): Ratio of the data to the model spectrum.
+        morder (int): Order of the polynomial
+        weights (optional, array): Default is None. Weights for each value for the polynomial fitting
+    Returns: 
+        (array): The polynomial value at each wavelength location
+    """
 
 
     x_vals=np.linspace(-1, 1, len(ratio))
@@ -706,40 +761,73 @@ def fit_legendre_polys(ratio, morder, weights=None):
 
     return polynomial
 
-def make_mask(lamdas, wavelengths):
-    mask=np.ones_like(lamdas, dtype=bool)
-    for pair in wavelengths:
-        low, high=pair
-        #import pdb; pdb.set_trace()
-        mask = mask & (lamdas<low) | (lamdas>high)
 
-    return mask
+def init(func, *args, **kwargs):
+    
+    global parameters, logLam
+    parameters, logLam, ndim=func(*args, **kwargs)
 
 
-###############################################################################
-#FUNCTIONS TAKEN FROM MICHELE CAPPELLARI'S pPXF CODE
-#
-# Copyright (C) 2001-2016, Michele Cappellari
-# E-mail: michele.cappellari_at_physics.ox.ac.uk
-#
-# Updated versions of the software are available from my web page
-# http://purl.org/cappellari/software
-#
-# If you have found this software useful for your research,
-# I would appreciate an acknowledgment to the use of the
-# "Penalized Pixel-Fitting method by Cappellari & Emsellem (2004)"
-#  and/or "by Cappellari (2017)" if you use the new features.
-#
-# This software is provided as is without any warranty whatsoever.
-# Permission to use, for non-commercial purposes is granted.
-# Permission to modify for personal or internal use is granted,
-# provided this copyright and disclaimer are included unchanged
-# at the beginning of the file. All other rights are reserved.
-#
-################################################################################
+
+
+
+
+def convolve_template_with_losvd(template, vel=0.0, sigma=0.0, velscale=None, vsyst=0.0):
+
+    """
+    **From Michele Cappellari's PPXF code**
+
+    Given a template, convolve it with a line-of-sight velocity distribution. 
+    
+    """
+
+    t_rfft, npad=_templates_rfft(template)
+    losvd_rfft=_losvd_rfft(vel, sigma, npad, velscale, npad, vsyst=vsyst)
+
+    convolved_t=np.fft.irfft(t_rfft*losvd_rfft)
+
+    return convolved_t
+
+
+def _losvd_rfft(vel, sig, pad, velscale, npad, vsyst=0.0):
+
+    """
+    **From Michele Cappellari's PPXF code**
+    """
+
+
+    nl = npad//2 + 1
+
+    vel=(vel+vsyst)/velscale
+    sig/=velscale
+
+
+
+    a, b = np.array([vel, 0.0])/sig
+
+    w = np.linspace(0, np.pi*sig, nl)
+    #analytic FFT of LOSVD
+    losvd_rfft = np.exp(1j*a*w - 0.5*(1 + b**2)*w**2)
+
+    return np.conj(losvd_rfft)
+
+    
+
+def _templates_rfft(templates):
+    """
+    **From Michele Cappellari's PPXF code**
+    Pre-compute the FFT (of real input) of all templates
+
+    """
+    npad = 2**int(np.ceil(np.log2(templates.shape[0])))
+    templates_rfft = np.fft.rfft(templates, n=npad, axis=0)
+
+    return templates_rfft, npad
+
 
 def emline(logLam_temp, line_wave, FWHM_gal):
     """
+    **From Michele Cappellari's PPXF code**
     Instrumental Gaussian line spread function integrated within the
     pixels borders. The function is normalized in such a way that
 
@@ -790,6 +878,7 @@ def emline(logLam_temp, line_wave, FWHM_gal):
 
 def emission_lines(logLam_temp, lamRange_gal, FWHM_gal, quiet=True):
     """
+    **From Michele Cappellari's PPXF code**
     Generates an array of Gaussian emission lines to be used as gas templates in PPXF.
     These templates represent the instrumental line spread function (LSF) at the
     set of wavelengths of each emission line.
@@ -898,6 +987,7 @@ def emission_lines(logLam_temp, lamRange_gal, FWHM_gal, quiet=True):
 
 def log_rebin(lamRange, spec, oversample=1, velscale=None, flux=False):
     """
+    **From Michele Cappellari's PPXF code**
     Logarithmically rebin a spectrum, while rigorously conserving the flux.
     Basically the photons in the spectrum are simply redistributed according
     to a new grid of pixels, with non-uniform size in the spectral direction.
@@ -977,6 +1067,7 @@ def log_rebin(lamRange, spec, oversample=1, velscale=None, flux=False):
 
 def gaussian_filter1d(spec, sig):
     """
+    **From Michele Cappellari's PPXF code**
     Convolve a spectrum by a Gaussian with different sigma for every pixel.
     If all sigma are the same this routine produces the same output as
     scipy.ndimage.gaussian_filter1d, except for the border treatment.
