@@ -1,0 +1,3 @@
+{
+  "tests_basic.py::SpectralFittingTestCase::test_check_for_gaps_in_lambda": true
+}
