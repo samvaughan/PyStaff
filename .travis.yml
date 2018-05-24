@@ -6,5 +6,5 @@ python:
 
 script: 
 
-  - python tests_SpectraFitting.py
-  - python tests_SpectraFitting_functs.py  
+  - python tests/tests_SpectraFitting.py
+  - python tests/tests_SpectraFitting_functs.py  
