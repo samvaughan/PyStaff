@@ -5,20 +5,39 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import numpy as np 
 import scipy.constants as const
 
-from stellarpops.tools import fspTools as FT
-
 from scipy import special
 import scipy.interpolate as si
 
 
 def rebin_MUSE_spectrum(lamdas, flux, errors, pixel_weights, instrumental_resolution=None, skyspecs=None, c=299792.458):
-    ##############################################################################################################################################################
+    """
+    Take a set of spectra and rebin to have uniform spacing in log lambda, rather than lambda. Note that the spectra can't have any gaps in them- the array **must** be 
+    a continous array of values.
 
+    Arguments:
+        lamdas (array-like): Array of wavelength values for each element of the spectra. **Must** be continuous, with no gaps!
+        flux (array-like): Array of flux values at each wavelength. 
+        errors (array-like):. Array of standard error values at each wavelength. 
+        pixel_weights (array-like): Array of weight values at each wavelength.
 
-    #flux_median=np.median(flux)
+    Keyword Arguments:
+        instrumental_resolution (array_like, optional): Defaults to None. Array of instrumental resolution values at each wavelength. If given, 
+            convolve the model spectra with a gaussian of this (variable) resolution during the fit. 
+        skyspecs (array_like, optional):  Defaults to None. Array of sky spectra to subtract during the fit.
+        c (float, optional): Defaults to 299792.458. Speed of light **in km/s**. 
 
-    # flux/=flux_median
-    # errors/=flux_median
+    Returns:
+        (tuple): a tuple containing:
+            * galaxy (array_like): The log-rebinned array of flux values
+            * noise (array_like): The log-rebinned array of standard error values
+            * all_sky (array_like or None): The log-rebinned (two-dimensional) array of sky spectra. If skyspecs is None, this is None
+            * log_inst_res (array_like or None): The log-rebinned instrumental resolution. If instrumental_resolution is None, this is None
+            * weights (array_like): The log-rebinned array of weights
+            * velscale (float): Velocity difference between adjacent pixels
+            * goodpixels (array_like): The log-rebinned array of standard error values. TODO: Delete this
+            * lam_range_gal (list): A two component vector with the start and stop wavelength values of the spectra. 
+            * logLam (array_like): The log-rebinned array of wavelength values
+    """
  
     lower=lamdas.min()
     upper=lamdas.max()
@@ -39,8 +58,6 @@ def rebin_MUSE_spectrum(lamdas, flux, errors, pixel_weights, instrumental_resolu
 
     if instrumental_resolution is not None:
         instrumental_resolution=instrumental_resolution[mask]
-
-    #GoodPixels from pPXF
     
 
     #Log rebin them
@@ -73,8 +90,17 @@ def get_start_vals_and_bounds(theta):
 
     """
     Given a set of parameter values in lmfit format, get their values and bounds as numpy arrays.
-    This is taken from the lmfit code itself
+    This is taken from the lmfit code itself.
+
+    Arguments:
+        theta: an lmfit Parameters object
+
+    Returns:
+        (tuple): a tuple containing:
+            * var_arr (array_like): A numpy array of each of the parameter values
+            * bounds: (array_like): A 2xN numpy array of (lower_bound, upper_bouns) for each fitting parameter
     """
+
     variables=[thing for thing in theta if theta[thing].vary]
     ndim=len(variables)
     var_arr = np.zeros(ndim)
@@ -105,7 +131,15 @@ def get_start_vals_and_bounds(theta):
 def get_starting_poitions_for_walkers(start_values, stds, nwalkers):
 
     """
-    Given a set of starting values and spreads for each value, make a set of random starting positions for each walker
+    Given a set of N starting values and sigmas for each value, make a set of random starting positions for M walkers. This is accomplished by 
+    drawing from an N dimensional gaussian M times.
+
+    Arguments:
+        start_values (array): A 1D array of starting values for each parameter.
+        stds: (array): A 1D array of standard deviations, corresponding to the spread around the start value for each parameter
+        nwakers: (int): The number of walkers we'll use.
+    Returns:
+        (array): An (N_parameters x N_walkers) array of starting positions.
     """
 
     ball=np.random.randn(start_values.shape[0], nwalkers)*stds[:, None] + start_values[:, None]
@@ -113,18 +147,45 @@ def get_starting_poitions_for_walkers(start_values, stds, nwalkers):
     return ball
 
 def make_mask(lamdas, wavelengths):
+
+    """
+    Make a boolean mask which is False between each pair of wavelengths and True outside them.
+    This is useful for masking skylines in our spectra
+
+    Arguments:
+        lamdas (array): An array of wavelength values
+        wavelengths (list): A 2 component vector of low lambda and high lambda values we want to mask between 
+    Returns:
+        (boolean array): A boolean of array of True outside the pair of wavelengths and False between them.
+    """
+
     mask=np.ones_like(lamdas, dtype=bool)
     for pair in wavelengths:
         low, high=pair
-        #import pdb; pdb.set_trace()
         mask = mask & (lamdas<low) | (lamdas>high)
 
     return mask
 
 def contiguous_zeros(a):
-    # Find the beginning and end of each run of 0s in the weights 
-    # from https://stackoverflow.com/questions/24885092/finding-the-consecutive-zeros-in-a-numpy-array
-    # Create an array that is 1 where a is 0, and pad each end with an extra 0.
+    """
+    Find the beginning and end of each run of 0s in an array. This is useful for finding the chunks of the 
+    weights which we've masked as zeros. 
+    This is taken from https://stackoverflow.com/questions/24885092/finding-the-consecutive-zeros-in-a-numpy-array
+    
+    For example::
+        a = [1, 2, 3, 0, 0, 0, 0, 0, 0, 4, 5, 6, 0, 0, 0, 0, 9, 8, 7, 0, 10, 11]
+    
+    would return::
+        array([[ 3,  9],
+           [12, 16],
+           [19, 20]])
+
+    Arguments: 
+        a (Boolean array): A Boolean array
+    Returns: 
+        (array): A two dimensional array consisting of (start, stop) indices of each run of zeros
+
+    """
     iszero = np.concatenate(([0], np.equal(a, 0).view(np.int8), [0]))
     absdiff = np.abs(np.diff(iszero))
     # Runs start and end where absdiff is 1.
@@ -277,13 +338,13 @@ def get_best_fit_template(theta, parameters, convolve=True):
     #NaD_sky_scale=theta['NaD_sky_scale'].value
 
     #Make the base template (age, Z, IMF)
-    base_template=FT.make_model_CvD(age, Z, imf_x1, imf_x2, interp_funct, logLams)
+    base_template=make_model(age, Z, imf_x1, imf_x2, interp_funct, logLams)
 
     #Make the correction for elements which vary >0.0
-    positive_only_correction=FT.get_correction(positive_only_interp, logLams, np.arange(len(positive_abundances)), positive_abundances, age, Z)
+    positive_only_correction=get_correction(positive_only_interp, logLams, np.arange(len(positive_abundances)), positive_abundances, age, Z)
 
     #Response function for general element corrections
-    general_correction=FT.get_correction(general_interp, logLams, np.arange(len(general_abundances)), general_abundances, age, Z)   
+    general_correction=get_correction(general_interp, logLams, np.arange(len(general_abundances)), general_abundances, age, Z)   
 
     #Have to treat Na differently
     na_correction=na_interp((Na_abundance, age, Z, logLams))
@@ -293,10 +354,87 @@ def get_best_fit_template(theta, parameters, convolve=True):
 
 
     if convolve:
-        template=FT.convolve_template_with_losvd(template, vel, sigma, velscale=velscale, vsyst=vsyst)[:len(galaxy)]
+        template=convolve_template_with_losvd(template, vel, sigma, velscale=velscale, vsyst=vsyst)[:len(galaxy)]
         logLams=logLam_gal.copy()
 
     return logLams, template, base_template
+
+
+def make_model(age, Z, imf_x1, imf_x2, interp_funct, logLams):
+
+    model=interp_funct((logLams, age, Z, imf_x1, imf_x2))
+
+    return model
+
+def get_correction(interpolator, logLams, elems, abunds, age, Z):
+
+    #The interpolator expects a list of 6 numbers. Meshgrid the two arrays which are of different lengths
+    # (the indices and the number of elements to enhance) and then create lists of ages, Zs and IMFs of the correct
+    # shapes. Then do the same for the abundances. Stack together and pass to the interpolator object!
+
+    points = np.meshgrid(elems, logLams, indexing='ij')
+    flat = np.array([m.flatten() for m in points])
+    #flat is now an array of points of shape 2, len(indices)*len(elems)
+    #make arrays of the other variables of length len(indices)*len(elems)
+    ages=np.ones_like(points[0])*age
+    Zs=np.ones_like(points[0])*Z
+    
+
+    #Get the correct abundance for each element- luckily we can index the abundance array by the integer element array
+    abunds=abunds[points[0]]
+
+    # import pdb; pdb.set_trace()
+
+    #Stack together
+    xi=np.vstack((flat[0, :], abunds.ravel(), ages.ravel(), Zs.ravel(), flat[1, :]))
+    #Do the interpolation
+    out_array = interpolator(xi.T)
+    #reshape everything to be (len(indices), len(elements))
+    result = out_array.reshape(*points[0].shape)
+
+    return np.sum(result, axis=0)
+
+
+
+def convolve_template_with_losvd(template, vel=0.0, sigma=0.0, velscale=None, vsyst=0.0):
+
+    t_rfft, npad=_templates_rfft(template)
+    losvd_rfft=_losvd_rfft(vel, sigma, npad, velscale, npad, vsyst=vsyst)
+
+    convolved_t=np.fft.irfft(t_rfft*losvd_rfft)
+
+    return convolved_t
+
+
+def _losvd_rfft(vel, sig, pad, velscale, npad, vsyst=0.0):
+
+
+    nl = npad//2 + 1
+
+    vel=(vel+vsyst)/velscale
+    sig/=velscale
+
+
+
+    a, b = np.array([vel, 0.0])/sig
+
+    w = np.linspace(0, np.pi*sig, nl)
+    #analytic FFT of LOSVD
+    losvd_rfft = np.exp(1j*a*w - 0.5*(1 + b**2)*w**2)
+
+    return np.conj(losvd_rfft)
+
+    
+
+def _templates_rfft(templates):
+    """
+    Pre-compute the FFT (of real input) of all templates
+
+    """
+    npad = 2**int(np.ceil(np.log2(templates.shape[0])))
+    templates_rfft = np.fft.rfft(templates, n=npad, axis=0)
+
+    return templates_rfft, npad
 
 def get_linear_best_fit_template(theta, parameters, fit_class, convole=True):
 
@@ -418,7 +556,7 @@ def lnlike(theta, parameters, plot=False, ret_specs=False):
     #Make the emission lines:
     if emission_lines is not None:
         unconvolved_em_lines=Hbeta_flux*emission_lines[:, 0] + Ha_flux*emission_lines[:, 1] + SII_6716*emission_lines[:, 2] + SII_6731*emission_lines[:, 3] + OIII * emission_lines[:, 4] + OI*emission_lines[:, 5] + NII*emission_lines[:, 6]
-        convolved_em_lines=FT.convolve_template_with_losvd(unconvolved_em_lines, vel_gas, sig_gas, velscale=velscale, vsyst=vsyst)[:len(galaxy)]
+        convolved_em_lines=convolve_template_with_losvd(unconvolved_em_lines, vel_gas, sig_gas, velscale=velscale, vsyst=vsyst)[:len(galaxy)]
     else:
         convolved_em_lines=np.zeros_like(galaxy)
 
@@ -491,7 +629,7 @@ def lnlike(theta, parameters, plot=False, ret_specs=False):
         
         #Fit the polynomials, weighting by the noise
         #poly=C.fit_continuum(gmask[0], g/t, n**2, clip=[2, 10.0, 10.0], order=morder)
-        poly=FT.fit_legendre_polys(g_corrected/t, morder, weights=1.0/n**2)
+        poly=fit_legendre_polys(g_corrected/t, morder, weights=1.0/n**2)
 
         #Scale the noise by some fraction ln_f
         n_corrected=np.sqrt((1+np.exp(2*ln_f))*n**2)         
@@ -558,7 +696,15 @@ def init(func, *args, **kwargs):
     global parameters, logLam
     parameters, logLam, ndim=func(*args, **kwargs)
 
+def fit_legendre_polys(ratio, morder, weights=None):
 
+
+    x_vals=np.linspace(-1, 1, len(ratio))
+    coeffs=np.polynomial.legendre.legfit(x_vals, ratio, morder, w=weights)
+
+    polynomial=np.polynomial.legendre.legval(x_vals, coeffs)
+
+    return polynomial
 
 def make_mask(lamdas, wavelengths):
     mask=np.ones_like(lamdas, dtype=bool)

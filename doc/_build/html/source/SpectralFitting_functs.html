@@ -1,0 +1,413 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>SpectralFitting_functs module &#8212; Py-Staff 1.0 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-SpectralFitting_functs">
+<span id="spectralfitting-functs-module"></span><h1>SpectralFitting_functs module<a class="headerlink" href="#module-SpectralFitting_functs" title="Permalink to this headline">¶</a></h1>
+<dl class="function">
+<dt id="SpectralFitting_functs.contiguous_zeros">
+<code class="descclassname">SpectralFitting_functs.</code><code class="descname">contiguous_zeros</code><span class="sig-paren">(</span><em>a</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/SpectralFitting_functs.html#contiguous_zeros"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#SpectralFitting_functs.contiguous_zeros" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find the beginning and end of each run of 0s in an array. This is useful for finding the chunks of the
+weights which we’ve masked as zeros.
+This is taken from <a class="reference external" href="https://stackoverflow.com/questions/24885092/finding-the-consecutive-zeros-in-a-numpy-array">https://stackoverflow.com/questions/24885092/finding-the-consecutive-zeros-in-a-numpy-array</a></p>
+<dl class="docutils">
+<dt>For example::</dt>
+<dd>a = [1, 2, 3, 0, 0, 0, 0, 0, 0, 4, 5, 6, 0, 0, 0, 0, 9, 8, 7, 0, 10, 11]</dd>
+<dt>would return::</dt>
+<dd><dl class="first last docutils">
+<dt>array([[ 3,  9],</dt>
+<dd>[12, 16],
+[19, 20]])</dd>
+</dl>
+</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>a</strong> (<em>Boolean array</em>) – A Boolean array</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A two dimensional array consisting of (start, stop) indices of each run of zeros</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">(array)</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="SpectralFitting_functs.convolve_template_with_losvd">
+<code class="descclassname">SpectralFitting_functs.</code><code class="descname">convolve_template_with_losvd</code><span class="sig-paren">(</span><em>template</em>, <em>vel=0.0</em>, <em>sigma=0.0</em>, <em>velscale=None</em>, <em>vsyst=0.0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/SpectralFitting_functs.html#convolve_template_with_losvd"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#SpectralFitting_functs.convolve_template_with_losvd" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="SpectralFitting_functs.emission_lines">
+<code class="descclassname">SpectralFitting_functs.</code><code class="descname">emission_lines</code><span class="sig-paren">(</span><em>logLam_temp</em>, <em>lamRange_gal</em>, <em>FWHM_gal</em>, <em>quiet=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/SpectralFitting_functs.html#emission_lines"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#SpectralFitting_functs.emission_lines" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates an array of Gaussian emission lines to be used as gas templates in PPXF.
+These templates represent the instrumental line spread function (LSF) at the
+set of wavelengths of each emission line.</p>
+<p>Additional lines can be easily added by editing the code of this procedure,
+which is meant as a template to be modified by the users where needed.</p>
+<p>For accuracy the Gaussians are integrated over the pixels boundaries.
+This integration is only useful for quite unresolved Gaussians but one should
+keep in mind that, if the LSF is not well resolved, the input spectrum is not
+properly sampled and one is wasting useful information from the spectrograph!</p>
+<p>The [OI], [OIII] and [NII] doublets are fixed at theoretical flux ratio~3.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>logLam_temp</strong> – is the natural log of the wavelength of the templates in
+Angstrom. logLam_temp should be the same as that of the stellar templates.</li>
+<li><strong>lamRange_gal</strong> – is the estimated rest-frame fitted wavelength range
+Typically lamRange_gal = np.array([np.min(wave), np.max(wave)])/(1 + z),
+where wave is the observed wavelength of the fitted galaxy pixels and
+z is an initial rough estimate of the galaxy redshift.</li>
+<li><strong>FWHM_gal</strong> – is the instrumantal FWHM of the galaxy spectrum under study
+in Angstrom. One can pass either a scalar or the name “func” of a function
+func(wave) which returns the FWHM for a given vector of input wavelengths.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">emission_lines, line_names, line_wave</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="SpectralFitting_functs.emline">
+<code class="descclassname">SpectralFitting_functs.</code><code class="descname">emline</code><span class="sig-paren">(</span><em>logLam_temp</em>, <em>line_wave</em>, <em>FWHM_gal</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/SpectralFitting_functs.html#emline"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#SpectralFitting_functs.emline" title="Permalink to this definition">¶</a></dt>
+<dd><p>Instrumental Gaussian line spread function integrated within the
+pixels borders. The function is normalized in such a way that</p>
+<blockquote>
+<div>integ.sum() = 1</div></blockquote>
+<p>For sigma=FWHM_gal/2.355 larger than one pixels, this function
+quickly converges to the normalized Gaussian function:</p>
+<blockquote>
+<div>gauss = dLogLam * np.exp(-0.5*(x/xsig)**2) / (np.sqrt(2*np.pi)*xsig)</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>logLam_temp</strong> – np.log(wavelength) in Angstrom</li>
+<li><strong>line_wave</strong> – lines wavelength in Angstrom</li>
+<li><strong>FWHM_gal</strong> – FWHM in Angstrom. This can be a scalar or the
+name of a function wich returns the FWHM for given wavelength.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">LSF computed for every logLam_temp</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="SpectralFitting_functs.fit_legendre_polys">
+<code class="descclassname">SpectralFitting_functs.</code><code class="descname">fit_legendre_polys</code><span class="sig-paren">(</span><em>ratio</em>, <em>morder</em>, <em>weights=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/SpectralFitting_functs.html#fit_legendre_polys"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#SpectralFitting_functs.fit_legendre_polys" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="SpectralFitting_functs.gaussian_filter1d">
+<code class="descclassname">SpectralFitting_functs.</code><code class="descname">gaussian_filter1d</code><span class="sig-paren">(</span><em>spec</em>, <em>sig</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/SpectralFitting_functs.html#gaussian_filter1d"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#SpectralFitting_functs.gaussian_filter1d" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convolve a spectrum by a Gaussian with different sigma for every pixel.
+If all sigma are the same this routine produces the same output as
+scipy.ndimage.gaussian_filter1d, except for the border treatment.
+Here the first/last p pixels are filled with zeros.
+When creating a template library for SDSS data, this implementation
+is 60x faster than a naive for loop over pixels.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>spec</strong> – vector with the spectrum to convolve</li>
+<li><strong>sig</strong> – vector of sigma values (in pixels) for every pixel</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">spec convolved with a Gaussian with dispersion sig</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="SpectralFitting_functs.get_best_fit_template">
+<code class="descclassname">SpectralFitting_functs.</code><code class="descname">get_best_fit_template</code><span class="sig-paren">(</span><em>theta</em>, <em>parameters</em>, <em>convolve=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/SpectralFitting_functs.html#get_best_fit_template"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#SpectralFitting_functs.get_best_fit_template" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="SpectralFitting_functs.get_correction">
+<code class="descclassname">SpectralFitting_functs.</code><code class="descname">get_correction</code><span class="sig-paren">(</span><em>interpolator</em>, <em>logLams</em>, <em>elems</em>, <em>abunds</em>, <em>age</em>, <em>Z</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/SpectralFitting_functs.html#get_correction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#SpectralFitting_functs.get_correction" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="SpectralFitting_functs.get_linear_best_fit_template">
+<code class="descclassname">SpectralFitting_functs.</code><code class="descname">get_linear_best_fit_template</code><span class="sig-paren">(</span><em>theta</em>, <em>parameters</em>, <em>fit_class</em>, <em>convole=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/SpectralFitting_functs.html#get_linear_best_fit_template"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#SpectralFitting_functs.get_linear_best_fit_template" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="SpectralFitting_functs.get_start_vals_and_bounds">
+<code class="descclassname">SpectralFitting_functs.</code><code class="descname">get_start_vals_and_bounds</code><span class="sig-paren">(</span><em>theta</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/SpectralFitting_functs.html#get_start_vals_and_bounds"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#SpectralFitting_functs.get_start_vals_and_bounds" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a set of parameter values in lmfit format, get their values and bounds as numpy arrays.
+This is taken from the lmfit code itself.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>theta</strong> – an lmfit Parameters object</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="docutils">
+<dt>a tuple containing:</dt>
+<dd><ul class="first last simple">
+<li>var_arr (array_like): A numpy array of each of the parameter values</li>
+<li>bounds: (array_like): A 2xN numpy array of (lower_bound, upper_bouns) for each fitting parameter</li>
+</ul>
+</dd>
+</dl>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">(tuple)</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="SpectralFitting_functs.get_starting_poitions_for_walkers">
+<code class="descclassname">SpectralFitting_functs.</code><code class="descname">get_starting_poitions_for_walkers</code><span class="sig-paren">(</span><em>start_values</em>, <em>stds</em>, <em>nwalkers</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/SpectralFitting_functs.html#get_starting_poitions_for_walkers"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#SpectralFitting_functs.get_starting_poitions_for_walkers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a set of N starting values and sigmas for each value, make a set of random starting positions for M walkers. This is accomplished by
+drawing from an N dimensional gaussian M times.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>start_values</strong> (<em>array</em>) – A 1D array of starting values for each parameter.</li>
+<li><strong>stds</strong> – (array): A 1D array of standard deviations, corresponding to the spread around the start value for each parameter</li>
+<li><strong>nwakers</strong> – (int): The number of walkers we’ll use.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">An (N_parameters x N_walkers) array of starting positions.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(array)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="SpectralFitting_functs.init">
+<code class="descclassname">SpectralFitting_functs.</code><code class="descname">init</code><span class="sig-paren">(</span><em>func</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/SpectralFitting_functs.html#init"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#SpectralFitting_functs.init" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="SpectralFitting_functs.lnlike">
+<code class="descclassname">SpectralFitting_functs.</code><code class="descname">lnlike</code><span class="sig-paren">(</span><em>theta</em>, <em>parameters</em>, <em>plot=False</em>, <em>ret_specs=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/SpectralFitting_functs.html#lnlike"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#SpectralFitting_functs.lnlike" title="Permalink to this definition">¶</a></dt>
+<dd><p>(log) Likelihood function</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="SpectralFitting_functs.log_rebin">
+<code class="descclassname">SpectralFitting_functs.</code><code class="descname">log_rebin</code><span class="sig-paren">(</span><em>lamRange</em>, <em>spec</em>, <em>oversample=1</em>, <em>velscale=None</em>, <em>flux=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/SpectralFitting_functs.html#log_rebin"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#SpectralFitting_functs.log_rebin" title="Permalink to this definition">¶</a></dt>
+<dd><p>Logarithmically rebin a spectrum, while rigorously conserving the flux.
+Basically the photons in the spectrum are simply redistributed according
+to a new grid of pixels, with non-uniform size in the spectral direction.</p>
+<p>When the flux keyword is set, this program performs an exact integration
+of the original spectrum, assumed to be a step function within the
+linearly-spaced pixels, onto the new logarithmically-spaced pixels.
+The output was tested to agree with the analytic solution.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>lamRange</strong> – two elements vector containing the central wavelength
+of the first and last pixels in the spectrum, which is assumed
+to have constant wavelength scale! E.g. from the values in the
+standard FITS keywords: LAMRANGE = CRVAL1 + [0, CDELT1*(NAXIS1 - 1)].
+It must be LAMRANGE[0] &lt; LAMRANGE[1].</li>
+<li><strong>spec</strong> – input spectrum.</li>
+<li><strong>oversample</strong> – can be used, not to loose spectral resolution,
+especally for extended wavelength ranges and to avoid aliasing.
+Default: OVERSAMPLE=1 ==&gt; Same number of output pixels as input.</li>
+<li><strong>velscale</strong> – velocity scale in km/s per pixels. If this variable is
+not defined, then it will contain in output the velocity scale.
+If this variable is defined by the user it will be used
+to set the output number of pixels and wavelength scale.</li>
+<li><strong>flux</strong> – <p>(boolean) True to preserve total flux. In this case the
+log rebinning changes the pixels flux in proportion to their
+dLam so the following command will show large differences
+beween the spectral shape before and after LOG_REBIN:</p>
+<blockquote>
+<div>plt.plot(exp(logLam), specNew)  # Plot log-rebinned spectrum
+plt.plot(np.linspace(lamRange[0], lamRange[1], spec.size), spec)</div></blockquote>
+<p>By defaul, when this is False, the above two lines produce
+two spectra that almost perfectly overlap each other.</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">[specNew, logLam, velscale] where logLam is the natural
+logarithm of the wavelength and velscale is in km/s.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="SpectralFitting_functs.make_mask">
+<code class="descclassname">SpectralFitting_functs.</code><code class="descname">make_mask</code><span class="sig-paren">(</span><em>lamdas</em>, <em>wavelengths</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/SpectralFitting_functs.html#make_mask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#SpectralFitting_functs.make_mask" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="SpectralFitting_functs.make_model">
+<code class="descclassname">SpectralFitting_functs.</code><code class="descname">make_model</code><span class="sig-paren">(</span><em>age</em>, <em>Z</em>, <em>imf_x1</em>, <em>imf_x2</em>, <em>interp_funct</em>, <em>logLams</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/SpectralFitting_functs.html#make_model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#SpectralFitting_functs.make_model" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="SpectralFitting_functs.plot_fit">
+<code class="descclassname">SpectralFitting_functs.</code><code class="descname">plot_fit</code><span class="sig-paren">(</span><em>theta</em>, <em>parameters</em>, <em>fig=None</em>, <em>axs=None</em>, <em>color=u'b'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/SpectralFitting_functs.html#plot_fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#SpectralFitting_functs.plot_fit" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="SpectralFitting_functs.rebin_MUSE_spectrum">
+<code class="descclassname">SpectralFitting_functs.</code><code class="descname">rebin_MUSE_spectrum</code><span class="sig-paren">(</span><em>lamdas</em>, <em>flux</em>, <em>errors</em>, <em>pixel_weights</em>, <em>instrumental_resolution=None</em>, <em>skyspecs=None</em>, <em>c=299792.458</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/SpectralFitting_functs.html#rebin_MUSE_spectrum"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#SpectralFitting_functs.rebin_MUSE_spectrum" title="Permalink to this definition">¶</a></dt>
+<dd><p>Take a set of spectra and rebin to have uniform spacing in log lambda, rather than lambda. Note that the spectra can’t have any gaps in them- the array <strong>must</strong> be
+a continous array of values.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>lamdas</strong> (<em>array-like</em>) – Array of wavelength values for each element of the spectra. <strong>Must</strong> be continuous, with no gaps!</li>
+<li><strong>flux</strong> (<em>array-like</em>) – Array of flux values at each wavelength.</li>
+<li><strong>errors</strong> (<em>array-like</em>) – . Array of standard error values at each wavelength.</li>
+<li><strong>pixel_weights</strong> (<em>array-like</em>) – Array of weight values at each wavelength.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">Keyword Arguments:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body"><ul class="first simple">
+<li><strong>instrumental_resolution</strong> (<em>array_like</em><em>, </em><em>optional</em>) – Defaults to None. Array of instrumental resolution values at each wavelength. If given,
+convolve the model spectra with a gaussian of this (variable) resolution during the fit.</li>
+<li><strong>skyspecs</strong> (<em>array_like</em><em>, </em><em>optional</em>) – Defaults to None. Array of sky spectra to subtract during the fit.</li>
+<li><strong>c</strong> (<em>float</em><em>, </em><em>optional</em>) – Defaults to 299792.458. Speed of light <strong>in km/s</strong>.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><dl class="docutils">
+<dt>a tuple containing:</dt>
+<dd><ul class="first last simple">
+<li>galaxy (array_like): The log-rebinned array of flux values</li>
+<li>noise (array_like): The log-rebinned array of standard error values</li>
+<li>all_sky (array_like or None): The log-rebinned (two-dimensional) array of sky spectra. If skyspecs is None, this is None</li>
+<li>log_inst_res (array_like or None): The log-rebinned instrumental resolution. If instrumental_resolution is None, this is None</li>
+<li>weights (array_like): The log-rebinned array of weights</li>
+<li>velscale (float): Velocity difference between adjacent pixels</li>
+<li>goodpixels (array_like): The log-rebinned array of standard error values. TODO: Delete this</li>
+<li>lam_range_gal (list): A two component vector with the start and stop wavelength values of the spectra.</li>
+<li>logLam (array_like): The log-rebinned array of wavelength values</li>
+</ul>
+</dd>
+</dl>
+</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(tuple)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Sam Vaughan.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+      |
+      <a href="../_sources/source/SpectralFitting_functs.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

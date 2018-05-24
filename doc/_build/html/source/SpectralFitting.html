@@ -1,0 +1,126 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>SpectralFitting module &#8212; Py-Staff 1.0 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-SpectralFitting">
+<span id="spectralfitting-module"></span><h1>SpectralFitting module<a class="headerlink" href="#module-SpectralFitting" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="SpectralFitting.SpectralFit">
+<em class="property">class </em><code class="descclassname">SpectralFitting.</code><code class="descname">SpectralFit</code><span class="sig-paren">(</span><em>lamdas</em>, <em>flux</em>, <em>noise</em>, <em>pixel_weights</em>, <em>fit_wavelengths</em>, <em>FWHM_gal</em>, <em>skyspecs=None</em>, <em>element_imf=u'kroupa'</em>, <em>instrumental_resolution=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/SpectralFitting.html#SpectralFit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#SpectralFitting.SpectralFit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dl class="attribute">
+<dt id="SpectralFitting.SpectralFit.c_light">
+<code class="descname">c_light</code><em class="property"> = 299792.458</em><a class="headerlink" href="#SpectralFitting.SpectralFit.c_light" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="SpectralFitting.SpectralFit.get_emission_lines">
+<code class="descname">get_emission_lines</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/SpectralFitting.html#SpectralFit.get_emission_lines"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#SpectralFitting.SpectralFit.get_emission_lines" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="SpectralFitting.SpectralFit.likelihood">
+<code class="descname">likelihood</code><span class="sig-paren">(</span><em>theta</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/SpectralFitting.html#SpectralFit.likelihood"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#SpectralFitting.SpectralFit.likelihood" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="SpectralFitting.SpectralFit.plot_fit">
+<code class="descname">plot_fit</code><span class="sig-paren">(</span><em>theta</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/SpectralFitting.html#SpectralFit.plot_fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#SpectralFitting.SpectralFit.plot_fit" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="SpectralFitting.SpectralFit.prepare_CVD2_interpolators">
+<code class="descname">prepare_CVD2_interpolators</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/SpectralFitting.html#SpectralFit.prepare_CVD2_interpolators"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#SpectralFitting.SpectralFit.prepare_CVD2_interpolators" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="SpectralFitting.SpectralFit.rebin_spectra">
+<code class="descname">rebin_spectra</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/SpectralFitting.html#SpectralFit.rebin_spectra"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#SpectralFitting.SpectralFit.rebin_spectra" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="SpectralFitting.SpectralFit.set_up_fit">
+<code class="descname">set_up_fit</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/SpectralFitting.html#SpectralFit.set_up_fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#SpectralFitting.SpectralFit.set_up_fit" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Sam Vaughan.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+      |
+      <a href="../_sources/source/SpectralFitting.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

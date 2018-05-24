@@ -1,0 +1,1089 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>SpectralFitting_functs &#8212; Py-Staff 1.0 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for SpectralFitting_functs</h1><div class="highlight"><pre>
+<span></span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">,</span> <span class="n">unicode_literals</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span> 
+<span class="kn">import</span> <span class="nn">scipy.constants</span> <span class="k">as</span> <span class="nn">const</span>
+
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="k">import</span> <span class="n">special</span>
+<span class="kn">import</span> <span class="nn">scipy.interpolate</span> <span class="k">as</span> <span class="nn">si</span>
+
+
+<div class="viewcode-block" id="rebin_MUSE_spectrum"><a class="viewcode-back" href="../source/SpectralFitting_functs.html#SpectralFitting_functs.rebin_MUSE_spectrum">[docs]</a><span class="k">def</span> <span class="nf">rebin_MUSE_spectrum</span><span class="p">(</span><span class="n">lamdas</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">errors</span><span class="p">,</span> <span class="n">pixel_weights</span><span class="p">,</span> <span class="n">instrumental_resolution</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">skyspecs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="mf">299792.458</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Take a set of spectra and rebin to have uniform spacing in log lambda, rather than lambda. Note that the spectra can&#39;t have any gaps in them- the array **must** be </span>
+<span class="sd">    a continous array of values.</span>
+
+<span class="sd">    Arguments:</span>
+<span class="sd">        lamdas (array-like): Array of wavelength values for each element of the spectra. **Must** be continuous, with no gaps!</span>
+<span class="sd">        flux (array-like): Array of flux values at each wavelength. </span>
+<span class="sd">        errors (array-like):. Array of standard error values at each wavelength. </span>
+<span class="sd">        pixel_weights (array-like): Array of weight values at each wavelength.</span>
+
+<span class="sd">    Keyword Arguments:</span>
+<span class="sd">        instrumental_resolution (array_like, optional): Defaults to None. Array of instrumental resolution values at each wavelength. If given, </span>
+<span class="sd">            convolve the model spectra with a gaussian of this (variable) resolution during the fit. </span>
+<span class="sd">        skyspecs (array_like, optional):  Defaults to None. Array of sky spectra to subtract during the fit.</span>
+<span class="sd">        c (float, optional): Defaults to 299792.458. Speed of light **in km/s**. </span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        (tuple): a tuple containing:</span>
+<span class="sd">            * galaxy (array_like): The log-rebinned array of flux values</span>
+<span class="sd">            * noise (array_like): The log-rebinned array of standard error values</span>
+<span class="sd">            * all_sky (array_like or None): The log-rebinned (two-dimensional) array of sky spectra. If skyspecs is None, this is None</span>
+<span class="sd">            * log_inst_res (array_like or None): The log-rebinned instrumental resolution. If instrumental_resolution is None, this is None</span>
+<span class="sd">            * weights (array_like): The log-rebinned array of weights</span>
+<span class="sd">            * velscale (float): Velocity difference between adjacent pixels</span>
+<span class="sd">            * goodpixels (array_like): The log-rebinned array of standard error values. TODO: Delete this</span>
+<span class="sd">            * lam_range_gal (list): A two component vector with the start and stop wavelength values of the spectra. </span>
+<span class="sd">            * logLam (array_like): The log-rebinned array of wavelength values</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+ 
+    <span class="n">lower</span><span class="o">=</span><span class="n">lamdas</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
+    <span class="n">upper</span><span class="o">=</span><span class="n">lamdas</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+
+    <span class="k">assert</span> <span class="p">(</span><span class="n">lower</span><span class="o">&gt;=</span><span class="n">lamdas</span><span class="o">.</span><span class="n">min</span><span class="p">())</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">upper</span><span class="o">&lt;=</span><span class="n">lamdas</span><span class="o">.</span><span class="n">max</span><span class="p">()),</span> <span class="s1">&#39;Lower and upper limits must be within the wavelength ranges of the data&#39;</span>
+
+    
+
+    <span class="n">lam_range_gal</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">lower</span><span class="p">,</span> <span class="n">upper</span><span class="p">])</span>
+    <span class="n">mask</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">((</span><span class="n">lamdas</span><span class="o">&gt;</span><span class="n">lower</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">lamdas</span><span class="o">&lt;</span><span class="n">upper</span><span class="p">))</span>
+
+    <span class="n">flux</span><span class="o">=</span><span class="n">flux</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+    <span class="n">errors</span><span class="o">=</span><span class="n">errors</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+    <span class="n">pixel_weights</span><span class="o">=</span><span class="n">pixel_weights</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">skyspecs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">skyspecs</span><span class="o">=</span><span class="n">skyspecs</span><span class="p">[:,</span> <span class="n">mask</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+
+    <span class="k">if</span> <span class="n">instrumental_resolution</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">instrumental_resolution</span><span class="o">=</span><span class="n">instrumental_resolution</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+    
+
+    <span class="c1">#Log rebin them</span>
+    <span class="n">galaxy</span><span class="p">,</span> <span class="n">logLam</span><span class="p">,</span> <span class="n">velscale</span> <span class="o">=</span> <span class="n">log_rebin</span><span class="p">(</span><span class="n">lam_range_gal</span><span class="p">,</span> <span class="n">flux</span><span class="p">)</span>
+    <span class="n">noise</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="o">=</span><span class="n">log_rebin</span><span class="p">(</span><span class="n">lam_range_gal</span><span class="p">,</span> <span class="n">errors</span><span class="p">,</span> <span class="n">velscale</span><span class="o">=</span><span class="n">velscale</span><span class="p">)</span> 
+    <span class="n">weights</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="o">=</span><span class="n">log_rebin</span><span class="p">(</span><span class="n">lam_range_gal</span><span class="p">,</span> <span class="n">pixel_weights</span><span class="p">,</span> <span class="n">velscale</span><span class="o">=</span><span class="n">velscale</span><span class="p">)</span>
+    <span class="c1">#import pdb; pdb.set_trace()</span>
+
+    <span class="n">all_sky</span><span class="o">=</span><span class="kc">None</span>
+    <span class="k">if</span> <span class="n">skyspecs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">O2_sky</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="o">=</span><span class="n">log_rebin</span><span class="p">(</span><span class="n">lam_range_gal</span><span class="p">,</span> <span class="n">skyspecs</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:],</span> <span class="n">velscale</span><span class="o">=</span><span class="n">velscale</span><span class="p">)</span>
+        <span class="n">sky</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="o">=</span><span class="n">log_rebin</span><span class="p">(</span><span class="n">lam_range_gal</span><span class="p">,</span> <span class="n">skyspecs</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="p">:],</span> <span class="n">velscale</span><span class="o">=</span><span class="n">velscale</span><span class="p">)</span> 
+        <span class="n">OH_sky</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="o">=</span><span class="n">log_rebin</span><span class="p">(</span><span class="n">lam_range_gal</span><span class="p">,</span> <span class="n">skyspecs</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="p">:],</span> <span class="n">velscale</span><span class="o">=</span><span class="n">velscale</span><span class="p">)</span>
+        <span class="n">NaD_sky</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="o">=</span><span class="n">log_rebin</span><span class="p">(</span><span class="n">lam_range_gal</span><span class="p">,</span> <span class="n">skyspecs</span><span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="p">:],</span> <span class="n">velscale</span><span class="o">=</span><span class="n">velscale</span><span class="p">)</span>
+
+        <span class="n">all_sky</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">O2_sky</span><span class="p">,</span> <span class="n">sky</span><span class="p">,</span> <span class="n">OH_sky</span><span class="p">,</span> <span class="n">NaD_sky</span><span class="p">])</span>
+
+    <span class="n">log_inst_res</span><span class="o">=</span><span class="kc">None</span>
+    <span class="k">if</span> <span class="n">instrumental_resolution</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">log_inst_res</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="o">=</span><span class="n">log_rebin</span><span class="p">(</span><span class="n">lam_range_gal</span><span class="p">,</span> <span class="n">instrumental_resolution</span><span class="p">,</span> <span class="n">velscale</span><span class="o">=</span><span class="n">velscale</span><span class="p">)</span>
+
+
+    <span class="n">goodpixels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">galaxy</span><span class="p">))</span>     
+
+    <span class="k">return</span> <span class="n">galaxy</span><span class="p">,</span> <span class="n">noise</span><span class="p">,</span> <span class="n">all_sky</span><span class="p">,</span> <span class="n">log_inst_res</span><span class="p">,</span> <span class="n">weights</span><span class="p">,</span> <span class="n">velscale</span><span class="p">,</span> <span class="n">goodpixels</span><span class="p">,</span> <span class="n">lam_range_gal</span><span class="p">,</span> <span class="n">logLam</span></div>
+<span class="c1">################################################################################################################################################################</span>
+
+
+<div class="viewcode-block" id="get_start_vals_and_bounds"><a class="viewcode-back" href="../source/SpectralFitting_functs.html#SpectralFitting_functs.get_start_vals_and_bounds">[docs]</a><span class="k">def</span> <span class="nf">get_start_vals_and_bounds</span><span class="p">(</span><span class="n">theta</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Given a set of parameter values in lmfit format, get their values and bounds as numpy arrays.</span>
+<span class="sd">    This is taken from the lmfit code itself.</span>
+
+<span class="sd">    Arguments:</span>
+<span class="sd">        theta: an lmfit Parameters object</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        (tuple): a tuple containing:</span>
+<span class="sd">            * var_arr (array_like): A numpy array of each of the parameter values</span>
+<span class="sd">            * bounds: (array_like): A 2xN numpy array of (lower_bound, upper_bouns) for each fitting parameter</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">variables</span><span class="o">=</span><span class="p">[</span><span class="n">thing</span> <span class="k">for</span> <span class="n">thing</span> <span class="ow">in</span> <span class="n">theta</span> <span class="k">if</span> <span class="n">theta</span><span class="p">[</span><span class="n">thing</span><span class="p">]</span><span class="o">.</span><span class="n">vary</span><span class="p">]</span>
+    <span class="n">ndim</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">variables</span><span class="p">)</span>
+    <span class="n">var_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">ndim</span><span class="p">)</span>
+    <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">bounds</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">par</span> <span class="ow">in</span> <span class="n">theta</span><span class="p">:</span>
+        <span class="n">param</span> <span class="o">=</span> <span class="n">theta</span><span class="p">[</span><span class="n">par</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">param</span><span class="o">.</span><span class="n">expr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">param</span><span class="o">.</span><span class="n">vary</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="n">param</span><span class="o">.</span><span class="n">vary</span><span class="p">:</span>
+            <span class="n">var_arr</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">param</span><span class="o">.</span><span class="n">value</span>
+            <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># don&#39;t want to append bounds if they&#39;re not being varied.</span>
+            <span class="k">continue</span>
+
+        <span class="n">param</span><span class="o">.</span><span class="n">from_internal</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">val</span><span class="p">:</span> <span class="n">val</span>
+        <span class="n">lb</span><span class="p">,</span> <span class="n">ub</span> <span class="o">=</span> <span class="n">param</span><span class="o">.</span><span class="n">min</span><span class="p">,</span> <span class="n">param</span><span class="o">.</span><span class="n">max</span>
+        <span class="k">if</span> <span class="n">lb</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">lb</span> <span class="ow">is</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">:</span>
+            <span class="n">lb</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span>
+        <span class="k">if</span> <span class="n">ub</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">ub</span> <span class="ow">is</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">:</span>
+            <span class="n">ub</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span>
+        <span class="n">bounds</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">lb</span><span class="p">,</span> <span class="n">ub</span><span class="p">))</span>
+    <span class="n">bounds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">bounds</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">var_arr</span><span class="p">,</span> <span class="n">bounds</span></div>
+
+<div class="viewcode-block" id="get_starting_poitions_for_walkers"><a class="viewcode-back" href="../source/SpectralFitting_functs.html#SpectralFitting_functs.get_starting_poitions_for_walkers">[docs]</a><span class="k">def</span> <span class="nf">get_starting_poitions_for_walkers</span><span class="p">(</span><span class="n">start_values</span><span class="p">,</span> <span class="n">stds</span><span class="p">,</span> <span class="n">nwalkers</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Given a set of N starting values and sigmas for each value, make a set of random starting positions for M walkers. This is accomplished by </span>
+<span class="sd">    drawing from an N dimensional gaussian M times.</span>
+
+<span class="sd">    Arguments:</span>
+<span class="sd">        start_values (array): A 1D array of starting values for each parameter.</span>
+<span class="sd">        stds: (array): A 1D array of standard deviations, corresponding to the spread around the start value for each parameter</span>
+<span class="sd">        nwakers: (int): The number of walkers we&#39;ll use.</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        (array): An (N_parameters x N_walkers) array of starting positions.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">ball</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">start_values</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">nwalkers</span><span class="p">)</span><span class="o">*</span><span class="n">stds</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">+</span> <span class="n">start_values</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">ball</span></div>
+
+<span class="k">def</span> <span class="nf">make_mask</span><span class="p">(</span><span class="n">lamdas</span><span class="p">,</span> <span class="n">wavelengths</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Make a boolean mask which is False between each pair of wavelengths and True outside them.</span>
+<span class="sd">    This is useful for masking skylines in our spectra</span>
+
+<span class="sd">    Arguments:</span>
+<span class="sd">        lamdas (array): An array of wavelength values</span>
+<span class="sd">        wavelengths (list): A 2 component vector of low lambda and high lambda values we want to mask between </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        (boolean array): A boolean of array of True outside the pair of wavelengths and False between them.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">mask</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">lamdas</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">pair</span> <span class="ow">in</span> <span class="n">wavelengths</span><span class="p">:</span>
+        <span class="n">low</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="n">pair</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">mask</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">lamdas</span><span class="o">&lt;</span><span class="n">low</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">lamdas</span><span class="o">&gt;</span><span class="n">high</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">mask</span>
+
+<div class="viewcode-block" id="contiguous_zeros"><a class="viewcode-back" href="../source/SpectralFitting_functs.html#SpectralFitting_functs.contiguous_zeros">[docs]</a><span class="k">def</span> <span class="nf">contiguous_zeros</span><span class="p">(</span><span class="n">a</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Find the beginning and end of each run of 0s in an array. This is useful for finding the chunks of the </span>
+<span class="sd">    weights which we&#39;ve masked as zeros. </span>
+<span class="sd">    This is taken from https://stackoverflow.com/questions/24885092/finding-the-consecutive-zeros-in-a-numpy-array</span>
+<span class="sd">    </span>
+<span class="sd">    For example::</span>
+<span class="sd">        a = [1, 2, 3, 0, 0, 0, 0, 0, 0, 4, 5, 6, 0, 0, 0, 0, 9, 8, 7, 0, 10, 11]</span>
+<span class="sd">    </span>
+<span class="sd">    would return::</span>
+<span class="sd">        array([[ 3,  9],</span>
+<span class="sd">           [12, 16],</span>
+<span class="sd">           [19, 20]])</span>
+
+<span class="sd">    Arguments: </span>
+<span class="sd">        a (Boolean array): A Boolean array</span>
+<span class="sd">    Returns: </span>
+<span class="sd">        (array): A two dimensional array consisting of (start, stop) indices of each run of zeros</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">iszero</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(([</span><span class="mi">0</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">equal</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int8</span><span class="p">),</span> <span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+    <span class="n">absdiff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">iszero</span><span class="p">))</span>
+    <span class="c1"># Runs start and end where absdiff is 1.</span>
+    <span class="n">ranges</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">absdiff</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ranges</span></div>
+
+<div class="viewcode-block" id="plot_fit"><a class="viewcode-back" href="../source/SpectralFitting_functs.html#SpectralFitting_functs.plot_fit">[docs]</a><span class="k">def</span> <span class="nf">plot_fit</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="n">parameters</span><span class="p">,</span> <span class="n">fig</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">axs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;b&#39;</span><span class="p">):</span>
+
+    <span class="c1">#c_light=const.c/1000.0</span>
+
+    <span class="n">chisq</span><span class="p">,</span> <span class="n">chisq_per_dof</span><span class="p">,</span> <span class="p">[</span><span class="n">lams</span><span class="p">,</span> <span class="n">temps</span><span class="p">,</span> <span class="n">errors</span><span class="p">,</span> <span class="n">specs</span><span class="p">,</span> <span class="n">skies</span><span class="p">,</span> <span class="n">emission_lines</span><span class="p">,</span> <span class="n">polys</span><span class="p">,</span> <span class="n">w</span><span class="p">]</span><span class="o">=</span><span class="n">lnlike</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="n">parameters</span><span class="p">,</span> <span class="n">ret_specs</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Chisq per DoF is </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">chisq_per_dof</span><span class="p">))</span>
+
+    <span class="c1">#galaxy, noise, all_sky, weights, velscale, goodpixels, vsyst, interp_funct, correction_interps, logLams, logLam_gal, fit_wavelengths=parameters</span>
+    <span class="c1">#Unpack the parameters we need</span>
+    <span class="n">fit_wavelengths</span><span class="o">=</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;fit_wavelengths&#39;</span><span class="p">]</span>
+    <span class="n">c_light</span><span class="o">=</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;c_light&#39;</span><span class="p">]</span>
+    <span class="n">vel</span> <span class="o">=</span> <span class="n">theta</span><span class="p">[</span><span class="s1">&#39;Vel&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+
+    <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span> 
+    <span class="kn">import</span> <span class="nn">matplotlib.gridspec</span> <span class="k">as</span> <span class="nn">gridspec</span>
+    <span class="kn">import</span> <span class="nn">matplotlib.ticker</span> <span class="k">as</span> <span class="nn">ticker</span>   
+
+
+
+    
+
+
+    
+    <span class="k">if</span> <span class="n">fig</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">axs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+
+        <span class="n">N_cols</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">fit_wavelengths</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+
+
+        <span class="n">fig</span><span class="o">=</span><span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">18</span><span class="p">,</span> <span class="mf">8.5</span><span class="p">))</span>
+        <span class="n">axs</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">fit_wavelengths</span><span class="p">)),</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;object&#39;</span><span class="p">)</span>
+        <span class="n">outer_grid</span><span class="o">=</span><span class="n">gridspec</span><span class="o">.</span><span class="n">GridSpec</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">N_cols</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">fit_wavelengths</span><span class="p">)):</span>
+            
+            <span class="n">inner_grid</span> <span class="o">=</span> <span class="n">gridspec</span><span class="o">.</span><span class="n">GridSpecFromSubplotSpec</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">width_ratios</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">height_ratios</span><span class="o">=</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">subplot_spec</span><span class="o">=</span><span class="n">outer_grid</span><span class="p">[</span><span class="n">i</span><span class="o">//</span><span class="n">N_cols</span><span class="p">,</span> <span class="n">i</span><span class="o">%</span><span class="n">N_cols</span><span class="p">],</span> <span class="n">hspace</span><span class="o">=</span><span class="mf">0.05</span><span class="p">)</span>
+            <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="n">inner_grid</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:</span><span class="mi">2</span><span class="p">])</span>
+            <span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="n">inner_grid</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="p">:</span><span class="mi">2</span><span class="p">],</span> <span class="n">sharex</span><span class="o">=</span><span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="p">])</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">setp</span><span class="p">(</span><span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">get_xticklabels</span><span class="p">(),</span> <span class="n">visible</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+
+    <span class="n">fit_ranges</span><span class="o">=</span><span class="n">fit_wavelengths</span><span class="o">*</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">vel</span><span class="o">/</span><span class="n">c_light</span><span class="p">))</span>
+
+
+
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">fit_range</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">fit_ranges</span><span class="p">):</span>
+
+        <span class="n">gmask</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">((</span><span class="n">lams</span><span class="o">&gt;</span><span class="n">fit_range</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">lams</span><span class="o">&lt;</span><span class="n">fit_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+        
+        
+        <span class="n">g</span><span class="o">=</span><span class="n">specs</span><span class="p">[</span><span class="n">gmask</span><span class="p">]</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">nanmedian</span><span class="p">(</span><span class="n">specs</span><span class="p">[</span><span class="n">gmask</span><span class="p">])</span>
+        <span class="n">t</span><span class="o">=</span><span class="n">temps</span><span class="p">[</span><span class="n">gmask</span><span class="p">]</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">nanmedian</span><span class="p">(</span><span class="n">specs</span><span class="p">[</span><span class="n">gmask</span><span class="p">])</span>
+        <span class="n">n</span><span class="o">=</span><span class="n">errors</span><span class="p">[</span><span class="n">gmask</span><span class="p">]</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">nanmedian</span><span class="p">(</span><span class="n">specs</span><span class="p">[</span><span class="n">gmask</span><span class="p">])</span>
+        <span class="n">sky</span><span class="o">=</span><span class="n">skies</span><span class="p">[</span><span class="n">gmask</span><span class="p">]</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">nanmedian</span><span class="p">(</span><span class="n">specs</span><span class="p">[</span><span class="n">gmask</span><span class="p">])</span>
+        <span class="n">p</span><span class="o">=</span><span class="n">polys</span><span class="p">[</span><span class="n">gmask</span><span class="p">]</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">nanmedian</span><span class="p">(</span><span class="n">specs</span><span class="p">[</span><span class="n">gmask</span><span class="p">])</span>
+        <span class="n">em_lines</span><span class="o">=</span><span class="n">emission_lines</span><span class="p">[</span><span class="n">gmask</span><span class="p">]</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">nanmedian</span><span class="p">(</span><span class="n">specs</span><span class="p">[</span><span class="n">gmask</span><span class="p">])</span>
+
+        <span class="n">x</span><span class="o">=</span><span class="n">lams</span><span class="p">[</span><span class="n">gmask</span><span class="p">]</span><span class="o">/</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">vel</span><span class="o">/</span><span class="n">c_light</span><span class="p">))</span>
+
+        <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">g</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s1">&#39;k&#39;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">1.5</span><span class="p">)</span>
+        <span class="n">ylimits</span><span class="o">=</span><span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">get_ylim</span><span class="p">()</span>
+        <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">g</span><span class="o">+</span><span class="n">sky</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s1">&#39;k&#39;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+        <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="n">color</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+        <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">t</span><span class="o">+</span><span class="n">em_lines</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">9</span><span class="p">)</span>
+        <span class="c1">#axs[0, i].plot(x, p, c=&#39;g&#39;, alpha=0.5)</span>
+        <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">fill_between</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">g</span><span class="o">-</span><span class="n">n</span><span class="p">,</span> <span class="n">g</span><span class="o">+</span><span class="n">n</span><span class="p">,</span> <span class="n">facecolor</span><span class="o">=</span><span class="s1">&#39;k&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+
+        <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">ylimits</span><span class="p">)</span>
+        <span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">100</span><span class="o">*</span><span class="p">(</span><span class="n">g</span><span class="o">-</span><span class="n">t</span><span class="o">-</span><span class="n">em_lines</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">t</span><span class="p">),</span> <span class="n">c</span><span class="o">=</span><span class="s1">&#39;k&#39;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">1.5</span><span class="p">)</span>
+        <span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">fill_between</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">100</span><span class="o">*</span><span class="n">n</span><span class="o">/</span><span class="n">g</span><span class="p">,</span> <span class="o">-</span><span class="mf">100.0</span><span class="o">*</span><span class="n">n</span><span class="o">/</span><span class="p">(</span><span class="n">g</span><span class="p">),</span> <span class="n">facecolor</span><span class="o">=</span><span class="s1">&#39;k&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+        <span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s1">&#39;dashed&#39;</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s1">&#39;k&#39;</span><span class="p">)</span>
+
+            
+        <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">([</span><span class="n">x</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">x</span><span class="o">.</span><span class="n">max</span><span class="p">()])</span>
+        <span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">([</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">])</span>
+
+        <span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;Rest Wavelength (\AA)&#39;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">14</span><span class="p">)</span>
+        <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;Flux (Arbitrary Units)&#39;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
+        <span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;Residuals (\%)&#39;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
+
+        <span class="c1">#Avoid the overlapping labels</span>
+        <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_major_locator</span><span class="p">(</span><span class="n">ticker</span><span class="o">.</span><span class="n">MaxNLocator</span><span class="p">(</span><span class="n">prune</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">))</span>
+        <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_major_locator</span><span class="p">(</span><span class="n">ticker</span><span class="o">.</span><span class="n">MaxNLocator</span><span class="p">(</span><span class="n">prune</span><span class="o">=</span><span class="s1">&#39;lower&#39;</span><span class="p">))</span>
+        <span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_major_locator</span><span class="p">(</span><span class="n">ticker</span><span class="o">.</span><span class="n">MultipleLocator</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+
+        <span class="c1">#Plot gray shaded regions on the areas that we mask from the chi-squared</span>
+        <span class="n">zero_weights</span><span class="o">=</span><span class="n">contiguous_zeros</span><span class="p">(</span><span class="n">w</span><span class="p">)</span>
+        <span class="c1">#import pdb; pdb.set_trace()</span>
+        
+        <span class="k">for</span> <span class="n">pair</span> <span class="ow">in</span> <span class="n">zero_weights</span><span class="p">:</span>
+            
+            <span class="n">low</span><span class="o">=</span><span class="n">pair</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">high</span><span class="o">=</span><span class="n">pair</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">axvspan</span><span class="p">(</span><span class="n">lams</span><span class="p">[</span><span class="n">low</span><span class="p">]</span><span class="o">/</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">vel</span><span class="o">/</span><span class="n">c_light</span><span class="p">)),</span> <span class="n">lams</span><span class="p">[</span><span class="n">high</span><span class="p">]</span><span class="o">/</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">vel</span><span class="o">/</span><span class="n">c_light</span><span class="p">)),</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;grey&#39;</span><span class="p">)</span>
+            <span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">axvspan</span><span class="p">(</span><span class="n">lams</span><span class="p">[</span><span class="n">low</span><span class="p">]</span><span class="o">/</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">vel</span><span class="o">/</span><span class="n">c_light</span><span class="p">)),</span> <span class="n">lams</span><span class="p">[</span><span class="n">high</span><span class="p">]</span><span class="o">/</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">vel</span><span class="o">/</span><span class="n">c_light</span><span class="p">)),</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;grey&#39;</span><span class="p">)</span>
+
+        <span class="c1"># axs[i, 0].axvspan(Ha_lam[0][0], Ha_lam[0][1], alpha=0.5, color=&#39;grey&#39;)</span>
+        <span class="c1"># axs[i, 1].axvspan(Ha_lam[0][0], Ha_lam[0][1], alpha=0.5, color=&#39;grey&#39;)</span>
+
+
+    <span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">chisq</span><span class="p">,</span> <span class="n">chisq_per_dof</span><span class="p">,</span> <span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">axs</span><span class="p">)</span></div>
+
+
+
+
+<div class="viewcode-block" id="get_best_fit_template"><a class="viewcode-back" href="../source/SpectralFitting_functs.html#SpectralFitting_functs.get_best_fit_template">[docs]</a><span class="k">def</span> <span class="nf">get_best_fit_template</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="n">parameters</span><span class="p">,</span> <span class="n">convolve</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+
+    <span class="n">c_light</span><span class="o">=</span><span class="n">const</span><span class="o">.</span><span class="n">c</span><span class="o">/</span><span class="mf">1000.0</span>
+
+    <span class="c1">#Unpack the parameters</span>
+    <span class="c1">#galaxy, noise, all_sky, weights, velscale, goodpixels, vsyst, interp_funct, correction_interps, logLams, logLam_gal, fit_wavelengths=parameters</span>
+    <span class="c1">#Unpack the parameters</span>
+    <span class="n">galaxy</span><span class="o">=</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;log_galaxy&#39;</span><span class="p">]</span>
+   <span class="c1"># noise=parameters[&#39;log_noise&#39;]</span>
+   <span class="c1"># all_sky=parameters[&#39;log_skyspecs&#39;]</span>
+    <span class="c1">#weights=parameters[&#39;log_weights&#39;]</span>
+    <span class="n">velscale</span><span class="o">=</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;velscale&#39;</span><span class="p">]</span>
+    <span class="c1">#goodpixels=parameters[&#39;goodpixels&#39;]</span>
+    <span class="n">vsyst</span><span class="o">=</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;dv&#39;</span><span class="p">]</span>
+    <span class="n">interp_funct</span><span class="o">=</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;linear_interp&#39;</span><span class="p">]</span>
+    <span class="n">correction_interps</span><span class="o">=</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;correction_interps&#39;</span><span class="p">]</span>
+    <span class="n">logLams</span><span class="o">=</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;log_lam_template&#39;</span><span class="p">]</span>
+    <span class="n">logLam_gal</span><span class="o">=</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;log_lam&#39;</span><span class="p">]</span>
+    <span class="c1">#fit_wavelengths=parameters[&#39;fit_wavelengths&#39;]</span>
+    <span class="c1">#c_light=parameters[&#39;c_light&#39;]</span>
+    <span class="c1">#O2_sky, base_sky, OH_sky=all_sky</span>
+    <span class="n">general_interp</span><span class="p">,</span> <span class="n">na_interp</span><span class="p">,</span> <span class="n">positive_only_interp</span><span class="p">,</span> <span class="n">T_interp</span><span class="o">=</span><span class="n">correction_interps</span>
+
+
+    <span class="c1">#Values of theta</span>
+    <span class="n">vel</span> <span class="o">=</span><span class="n">theta</span><span class="p">[</span><span class="s1">&#39;Vel&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> 
+    <span class="n">sigma</span><span class="o">=</span><span class="n">theta</span><span class="p">[</span><span class="s1">&#39;sigma&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+    <span class="n">Na_abundance</span><span class="o">=</span><span class="n">theta</span><span class="p">[</span><span class="s1">&#39;Na&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+    <span class="n">general_abundances</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">theta</span><span class="p">[</span><span class="s1">&#39;Ca&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">theta</span><span class="p">[</span><span class="s1">&#39;Fe&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">theta</span><span class="p">[</span><span class="s1">&#39;C&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">theta</span><span class="p">[</span><span class="s1">&#39;N&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">theta</span><span class="p">[</span><span class="s1">&#39;Ti&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">theta</span><span class="p">[</span><span class="s1">&#39;Mg&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">theta</span><span class="p">[</span><span class="s1">&#39;Si&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">theta</span><span class="p">[</span><span class="s1">&#39;Ba&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">])</span>  
+    <span class="n">positive_abundances</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">theta</span><span class="p">[</span><span class="s1">&#39;as_Fe&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">theta</span><span class="p">[</span><span class="s1">&#39;Cr&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">,</span><span class="n">theta</span><span class="p">[</span><span class="s1">&#39;Mn&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">,</span><span class="n">theta</span><span class="p">[</span><span class="s1">&#39;Ni&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">,</span><span class="n">theta</span><span class="p">[</span><span class="s1">&#39;Co&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">theta</span><span class="p">[</span><span class="s1">&#39;Eu&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">,</span><span class="n">theta</span><span class="p">[</span><span class="s1">&#39;Sr&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">theta</span><span class="p">[</span><span class="s1">&#39;K&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">,</span><span class="n">theta</span><span class="p">[</span><span class="s1">&#39;V&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">,</span><span class="n">theta</span><span class="p">[</span><span class="s1">&#39;Cu&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">])</span>
+    <span class="n">age</span><span class="o">=</span><span class="n">theta</span><span class="p">[</span><span class="s1">&#39;age&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+    <span class="n">Z</span><span class="o">=</span><span class="n">theta</span><span class="p">[</span><span class="s1">&#39;Z&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+    <span class="n">imf_x1</span><span class="p">,</span> <span class="n">imf_x2</span><span class="o">=</span><span class="n">theta</span><span class="p">[</span><span class="s1">&#39;imf_x1&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">theta</span><span class="p">[</span><span class="s1">&#39;imf_x2&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+    <span class="c1">#O2_scale=theta[&#39;O2_Scale&#39;].value</span>
+    <span class="c1">#sky_scale=theta[&#39;sky_Scale&#39;].value</span>
+    <span class="c1">#OH_scale=theta[&#39;OH_Scale&#39;].value</span>
+    <span class="c1">#NaD_sky_scale=theta[&#39;NaD_sky_scale&#39;].value</span>
+
+    <span class="c1">#Make the base template (age, Z, IMF)</span>
+    <span class="n">base_template</span><span class="o">=</span><span class="n">make_model</span><span class="p">(</span><span class="n">age</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">imf_x1</span><span class="p">,</span> <span class="n">imf_x2</span><span class="p">,</span> <span class="n">interp_funct</span><span class="p">,</span> <span class="n">logLams</span><span class="p">)</span>
+
+    <span class="c1">#Make the correction for elements which vary &gt;0.0</span>
+    <span class="n">positive_only_correction</span><span class="o">=</span><span class="n">get_correction</span><span class="p">(</span><span class="n">positive_only_interp</span><span class="p">,</span> <span class="n">logLams</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">positive_abundances</span><span class="p">)),</span> <span class="n">positive_abundances</span><span class="p">,</span> <span class="n">age</span><span class="p">,</span> <span class="n">Z</span><span class="p">)</span>
+
+    <span class="c1">#Response function for general element corrections</span>
+    <span class="n">general_correction</span><span class="o">=</span><span class="n">get_correction</span><span class="p">(</span><span class="n">general_interp</span><span class="p">,</span> <span class="n">logLams</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">general_abundances</span><span class="p">)),</span> <span class="n">general_abundances</span><span class="p">,</span> <span class="n">age</span><span class="p">,</span> <span class="n">Z</span><span class="p">)</span>   
+
+    <span class="c1">#Have to treat Na differently</span>
+    <span class="n">na_correction</span><span class="o">=</span><span class="n">na_interp</span><span class="p">((</span><span class="n">Na_abundance</span><span class="p">,</span> <span class="n">age</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">logLams</span><span class="p">))</span>
+
+    <span class="c1">#Add things together- see Appendix of Vaughan+ 2018</span>
+    <span class="n">template</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">base_template</span><span class="p">)</span><span class="o">+</span><span class="n">general_correction</span><span class="o">+</span><span class="n">positive_only_correction</span><span class="o">+</span><span class="n">na_correction</span><span class="p">)</span>
+
+
+    <span class="k">if</span> <span class="n">convolve</span><span class="p">:</span>
+        <span class="n">template</span><span class="o">=</span><span class="n">convolve_template_with_losvd</span><span class="p">(</span><span class="n">template</span><span class="p">,</span> <span class="n">vel</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">velscale</span><span class="o">=</span><span class="n">velscale</span><span class="p">,</span> <span class="n">vsyst</span><span class="o">=</span><span class="n">vsyst</span><span class="p">)[:</span><span class="nb">len</span><span class="p">(</span><span class="n">galaxy</span><span class="p">)]</span>
+        <span class="n">logLams</span><span class="o">=</span><span class="n">logLam_gal</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">logLams</span><span class="p">,</span> <span class="n">template</span><span class="p">,</span> <span class="n">base_template</span></div>
+
+
+<div class="viewcode-block" id="make_model"><a class="viewcode-back" href="../source/SpectralFitting_functs.html#SpectralFitting_functs.make_model">[docs]</a><span class="k">def</span> <span class="nf">make_model</span><span class="p">(</span><span class="n">age</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">imf_x1</span><span class="p">,</span> <span class="n">imf_x2</span><span class="p">,</span> <span class="n">interp_funct</span><span class="p">,</span> <span class="n">logLams</span><span class="p">):</span>
+
+    <span class="n">model</span><span class="o">=</span><span class="n">interp_funct</span><span class="p">((</span><span class="n">logLams</span><span class="p">,</span> <span class="n">age</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">imf_x1</span><span class="p">,</span> <span class="n">imf_x2</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">model</span></div>
+
+<div class="viewcode-block" id="get_correction"><a class="viewcode-back" href="../source/SpectralFitting_functs.html#SpectralFitting_functs.get_correction">[docs]</a><span class="k">def</span> <span class="nf">get_correction</span><span class="p">(</span><span class="n">interpolator</span><span class="p">,</span> <span class="n">logLams</span><span class="p">,</span> <span class="n">elems</span><span class="p">,</span> <span class="n">abunds</span><span class="p">,</span> <span class="n">age</span><span class="p">,</span> <span class="n">Z</span><span class="p">):</span>
+
+    <span class="c1">#The interpolator expects a list of 6 numbers. Meshgrid the two arrays which are of different lengths</span>
+    <span class="c1"># (the indices and the number of elements to enhance) and then create lists of ages, Zs and IMFs of the correct</span>
+    <span class="c1"># shapes. Then do the same for the abundances. Stack together and pass to the interpolator object!</span>
+
+    <span class="n">points</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">elems</span><span class="p">,</span> <span class="n">logLams</span><span class="p">,</span> <span class="n">indexing</span><span class="o">=</span><span class="s1">&#39;ij&#39;</span><span class="p">)</span>
+    <span class="n">flat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">m</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">points</span><span class="p">])</span>
+    <span class="c1">#flat is now an array of points of shape 2, len(indices)*len(elems)</span>
+    <span class="c1">#make arrays of the other variables of length len(indices)*len(elems)</span>
+    <span class="n">ages</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">points</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">*</span><span class="n">age</span>
+    <span class="n">Zs</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">points</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">*</span><span class="n">Z</span>
+    
+
+    <span class="c1">#Get the correct abundance for each element- luckily we can index the abundance array by the integer element array</span>
+    <span class="n">abunds</span><span class="o">=</span><span class="n">abunds</span><span class="p">[</span><span class="n">points</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+
+    <span class="c1"># import pdb; pdb.set_trace()</span>
+
+    <span class="c1">#Stack together</span>
+    <span class="n">xi</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">flat</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:],</span> <span class="n">abunds</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">ages</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">Zs</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">flat</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="p">:]))</span>
+    <span class="c1">#Do the interpolation</span>
+    <span class="n">out_array</span> <span class="o">=</span> <span class="n">interpolator</span><span class="p">(</span><span class="n">xi</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+    <span class="c1">#reshape everything to be (len(indices), len(elements))</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">out_array</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">*</span><span class="n">points</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="convolve_template_with_losvd"><a class="viewcode-back" href="../source/SpectralFitting_functs.html#SpectralFitting_functs.convolve_template_with_losvd">[docs]</a><span class="k">def</span> <span class="nf">convolve_template_with_losvd</span><span class="p">(</span><span class="n">template</span><span class="p">,</span> <span class="n">vel</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">velscale</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">vsyst</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
+
+    <span class="n">t_rfft</span><span class="p">,</span> <span class="n">npad</span><span class="o">=</span><span class="n">_templates_rfft</span><span class="p">(</span><span class="n">template</span><span class="p">)</span>
+    <span class="n">losvd_rfft</span><span class="o">=</span><span class="n">_losvd_rfft</span><span class="p">(</span><span class="n">vel</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">npad</span><span class="p">,</span> <span class="n">velscale</span><span class="p">,</span> <span class="n">npad</span><span class="p">,</span> <span class="n">vsyst</span><span class="o">=</span><span class="n">vsyst</span><span class="p">)</span>
+
+    <span class="n">convolved_t</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">irfft</span><span class="p">(</span><span class="n">t_rfft</span><span class="o">*</span><span class="n">losvd_rfft</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">convolved_t</span></div>
+
+
+<span class="k">def</span> <span class="nf">_losvd_rfft</span><span class="p">(</span><span class="n">vel</span><span class="p">,</span> <span class="n">sig</span><span class="p">,</span> <span class="n">pad</span><span class="p">,</span> <span class="n">velscale</span><span class="p">,</span> <span class="n">npad</span><span class="p">,</span> <span class="n">vsyst</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
+
+
+    <span class="n">nl</span> <span class="o">=</span> <span class="n">npad</span><span class="o">//</span><span class="mi">2</span> <span class="o">+</span> <span class="mi">1</span>
+
+    <span class="n">vel</span><span class="o">=</span><span class="p">(</span><span class="n">vel</span><span class="o">+</span><span class="n">vsyst</span><span class="p">)</span><span class="o">/</span><span class="n">velscale</span>
+    <span class="n">sig</span><span class="o">/=</span><span class="n">velscale</span>
+
+
+
+    <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">vel</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">])</span><span class="o">/</span><span class="n">sig</span>
+
+    <span class="n">w</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">sig</span><span class="p">,</span> <span class="n">nl</span><span class="p">)</span>
+    <span class="c1">#analytic FFT of LOSVD</span>
+    <span class="n">losvd_rfft</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="mi">1</span><span class="n">j</span><span class="o">*</span><span class="n">a</span><span class="o">*</span><span class="n">w</span> <span class="o">-</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">b</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="n">w</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">conj</span><span class="p">(</span><span class="n">losvd_rfft</span><span class="p">)</span>
+
+    
+
+<span class="k">def</span> <span class="nf">_templates_rfft</span><span class="p">(</span><span class="n">templates</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Pre-compute the FFT (of real input) of all templates</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">npad</span> <span class="o">=</span> <span class="mi">2</span><span class="o">**</span><span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log2</span><span class="p">(</span><span class="n">templates</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])))</span>
+    <span class="n">templates_rfft</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">rfft</span><span class="p">(</span><span class="n">templates</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="n">npad</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">templates_rfft</span><span class="p">,</span> <span class="n">npad</span>
+
+<div class="viewcode-block" id="get_linear_best_fit_template"><a class="viewcode-back" href="../source/SpectralFitting_functs.html#SpectralFitting_functs.get_linear_best_fit_template">[docs]</a><span class="k">def</span> <span class="nf">get_linear_best_fit_template</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="n">parameters</span><span class="p">,</span> <span class="n">fit_class</span><span class="p">,</span> <span class="n">convole</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+
+
+    <span class="n">logLams</span><span class="p">,</span> <span class="n">template</span><span class="p">,</span> <span class="n">base_template</span><span class="o">=</span><span class="n">get_best_fit_template</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="n">parameters</span><span class="p">,</span> <span class="n">convolve</span><span class="o">=</span><span class="n">convole</span><span class="p">)</span>
+
+    <span class="n">interp1</span><span class="o">=</span><span class="n">si</span><span class="o">.</span><span class="n">interp1d</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">logLams</span><span class="p">),</span> <span class="n">template</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="s1">&#39;extrapolate&#39;</span><span class="p">)</span>
+    <span class="n">lin_template</span><span class="o">=</span><span class="n">interp1</span><span class="p">(</span><span class="n">fit_class</span><span class="o">.</span><span class="n">lin_lam</span><span class="p">)</span>
+
+    <span class="n">interp2</span><span class="o">=</span><span class="n">si</span><span class="o">.</span><span class="n">interp1d</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">fit_class</span><span class="o">.</span><span class="n">logLam_template</span><span class="p">),</span> <span class="n">base_template</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="s1">&#39;extrapolate&#39;</span><span class="p">)</span>
+    <span class="n">lin_base_template</span><span class="o">=</span><span class="n">interp2</span><span class="p">(</span><span class="n">fit_class</span><span class="o">.</span><span class="n">lin_lam</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">lin_template</span><span class="p">,</span> <span class="n">lin_base_template</span></div>
+
+
+
+<div class="viewcode-block" id="lnlike"><a class="viewcode-back" href="../source/SpectralFitting_functs.html#SpectralFitting_functs.lnlike">[docs]</a><span class="k">def</span> <span class="nf">lnlike</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="n">parameters</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">ret_specs</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    (log) Likelihood function</span>
+<span class="sd">    &quot;&quot;&quot;</span> 
+
+
+    
+
+    <span class="c1">#Unpack the parameters</span>
+    <span class="n">galaxy</span><span class="o">=</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;log_galaxy&#39;</span><span class="p">]</span>
+    <span class="n">noise</span><span class="o">=</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;log_noise&#39;</span><span class="p">]</span>
+    <span class="n">all_sky</span><span class="o">=</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;log_skyspecs&#39;</span><span class="p">]</span>
+    <span class="n">weights</span><span class="o">=</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;log_weights&#39;</span><span class="p">]</span>
+    <span class="n">emission_lines</span><span class="o">=</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;emission_lines&#39;</span><span class="p">]</span>
+    <span class="n">velscale</span><span class="o">=</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;velscale&#39;</span><span class="p">]</span>
+    <span class="c1">#goodpixels=parameters[&#39;goodpixels&#39;]</span>
+    <span class="n">vsyst</span><span class="o">=</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;dv&#39;</span><span class="p">]</span>
+    <span class="c1">#interp_funct=parameters[&#39;linear_interp&#39;]</span>
+    <span class="n">correction_interps</span><span class="o">=</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;correction_interps&#39;</span><span class="p">]</span>
+    <span class="c1">#logLams=parameters[&#39;log_lam_template&#39;]</span>
+    <span class="n">logLam_gal</span><span class="o">=</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;log_lam&#39;</span><span class="p">]</span>
+    <span class="n">fit_wavelengths</span><span class="o">=</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;fit_wavelengths&#39;</span><span class="p">]</span>
+    <span class="n">c_light</span><span class="o">=</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;c_light&#39;</span><span class="p">]</span>
+    <span class="n">instrumental_resolution</span><span class="o">=</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;instrumental_resolution&#39;</span><span class="p">]</span>
+
+
+
+
+    <span class="c1">#all_sky, weights, velscale, goodpixels, vsyst, interp_funct, correction_interps, logLams, logLam_gal, fit_wavelengths=parameters</span>
+
+    <span class="k">if</span> <span class="n">all_sky</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">O2_sky</span><span class="p">,</span> <span class="n">base_sky</span><span class="p">,</span> <span class="n">OH_sky</span><span class="p">,</span> <span class="n">NaD_sky</span><span class="o">=</span><span class="n">all_sky</span>
+
+    <span class="n">general_interp</span><span class="p">,</span> <span class="n">na_interp</span><span class="p">,</span> <span class="n">positive_only_interp</span><span class="p">,</span> <span class="n">T_interp</span><span class="o">=</span><span class="n">correction_interps</span>
+
+
+
+    <span class="c1">#Values of theta</span>
+    <span class="n">vel</span> <span class="o">=</span><span class="n">theta</span><span class="p">[</span><span class="s1">&#39;Vel&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> 
+    <span class="c1"># sigma=theta[&#39;sigma&#39;].value</span>
+    <span class="c1"># Na_abundance=theta[&#39;Na&#39;].value</span>
+    <span class="c1"># general_abundances=np.array([theta[&#39;Ca&#39;].value, theta[&#39;Fe&#39;].value, theta[&#39;C&#39;].value, theta[&#39;N&#39;].value, theta[&#39;Ti&#39;].value, theta[&#39;Mg&#39;].value, theta[&#39;Si&#39;].value, theta[&#39;Ba&#39;].value])  </span>
+    <span class="c1"># positive_abundances=np.array([theta[&#39;as_Fe&#39;].value, theta[&#39;Cr&#39;].value,theta[&#39;Mn&#39;].value,theta[&#39;Ni&#39;].value,theta[&#39;Co&#39;].value, theta[&#39;Eu&#39;].value,theta[&#39;Sr&#39;].value, theta[&#39;K&#39;].value,theta[&#39;V&#39;].value,theta[&#39;Cu&#39;].value])</span>
+    <span class="c1"># age=theta[&#39;age&#39;].value</span>
+    <span class="c1"># Z=theta[&#39;Z&#39;].value</span>
+    <span class="c1"># imf_x1, imf_x2=theta[&#39;imf_x1&#39;].value, theta[&#39;imf_x2&#39;].value</span>
+
+    <span class="c1">#Scale the noise by some value f</span>
+    <span class="n">ln_f</span><span class="o">=</span><span class="n">theta</span><span class="p">[</span><span class="s1">&#39;ln_f&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+
+
+    <span class="k">if</span> <span class="n">all_sky</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span> 
+        <span class="n">O2_scale</span><span class="o">=</span><span class="n">theta</span><span class="p">[</span><span class="s1">&#39;O2_Scale&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+        <span class="n">sky_scale</span><span class="o">=</span><span class="n">theta</span><span class="p">[</span><span class="s1">&#39;sky_Scale&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+        <span class="n">OH_scale</span><span class="o">=</span><span class="n">theta</span><span class="p">[</span><span class="s1">&#39;OH_Scale&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+        <span class="n">NaD_sky_scale</span><span class="o">=</span><span class="n">theta</span><span class="p">[</span><span class="s1">&#39;NaD_sky_scale&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+
+    <span class="k">if</span> <span class="n">emission_lines</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">vel_gas</span><span class="o">=</span><span class="n">theta</span><span class="p">[</span><span class="s1">&#39;Vel_em&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+        <span class="n">sig_gas</span><span class="o">=</span><span class="n">theta</span><span class="p">[</span><span class="s1">&#39;sig_em&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+        <span class="n">Ha_flux</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">theta</span><span class="p">[</span><span class="s1">&#39;Ha&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+        <span class="n">Hbeta_flux</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">theta</span><span class="p">[</span><span class="s1">&#39;Hb&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+        
+        <span class="n">SII_6716</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">theta</span><span class="p">[</span><span class="s1">&#39;SII_6716&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+        <span class="n">SII_6731</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">theta</span><span class="p">[</span><span class="s1">&#39;SII_6731&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+        <span class="n">OIII</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">theta</span><span class="p">[</span><span class="s1">&#39;OIII&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+        <span class="n">OI</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">theta</span><span class="p">[</span><span class="s1">&#39;OI&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+        <span class="n">NII</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">theta</span><span class="p">[</span><span class="s1">&#39;NII&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+
+
+
+    <span class="c1">#SINGLE POWER LAW IMF</span>
+    <span class="c1">#theta[&#39;imf_x1&#39;].set(theta[&#39;imf_x2&#39;].value)</span>
+
+
+    <span class="n">_</span><span class="p">,</span> <span class="n">temp</span><span class="p">,</span> <span class="n">base_template</span><span class="o">=</span><span class="n">get_best_fit_template</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="n">parameters</span><span class="p">,</span> <span class="n">convolve</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    
+    <span class="c1">#Ranges we fit over- these have to change with redshift</span>
+    <span class="n">fit_ranges</span><span class="o">=</span><span class="n">fit_wavelengths</span><span class="o">*</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">vel</span><span class="o">/</span><span class="n">c_light</span><span class="p">))</span>
+
+    <span class="c1">#Ranges of pixels to mask. These also have to change with z</span>
+    <span class="c1">#mask_ranges=masked_wavelengths*(np.exp(vel/c_light))</span>
+
+    <span class="c1">#make the array to mask out things from the Chi-squared</span>
+    <span class="c1"># pixel_mask=np.ones_like(galaxy, dtype=bool)</span>
+    <span class="c1"># for array in mask_ranges:</span>
+    <span class="c1">#     m=make_mask(logLam_gal, array)</span>
+    <span class="c1">#     pixel_mask= m &amp; pixel_mask</span>
+   
+    <span class="n">chisqs</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">galaxy</span><span class="p">)</span>
+
+    <span class="c1">#Median both the galaxy and noise. Added in October 2017!</span>
+    <span class="c1">#Changed back in Jan 2018!</span>
+    <span class="c1">#galmedian=np.median(galaxy)</span>
+    <span class="c1">#t_median=np.median(temp)</span>
+
+
+
+
+
+    <span class="c1">#Make the emission lines:</span>
+    <span class="k">if</span> <span class="n">emission_lines</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">unconvolved_em_lines</span><span class="o">=</span><span class="n">Hbeta_flux</span><span class="o">*</span><span class="n">emission_lines</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">Ha_flux</span><span class="o">*</span><span class="n">emission_lines</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">SII_6716</span><span class="o">*</span><span class="n">emission_lines</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="n">SII_6731</span><span class="o">*</span><span class="n">emission_lines</span><span class="p">[:,</span> <span class="mi">3</span><span class="p">]</span> <span class="o">+</span> <span class="n">OIII</span> <span class="o">*</span> <span class="n">emission_lines</span><span class="p">[:,</span> <span class="mi">4</span><span class="p">]</span> <span class="o">+</span> <span class="n">OI</span><span class="o">*</span><span class="n">emission_lines</span><span class="p">[:,</span> <span class="mi">5</span><span class="p">]</span> <span class="o">+</span> <span class="n">NII</span><span class="o">*</span><span class="n">emission_lines</span><span class="p">[:,</span> <span class="mi">6</span><span class="p">]</span>
+        <span class="n">convolved_em_lines</span><span class="o">=</span><span class="n">convolve_template_with_losvd</span><span class="p">(</span><span class="n">unconvolved_em_lines</span><span class="p">,</span> <span class="n">vel_gas</span><span class="p">,</span> <span class="n">sig_gas</span><span class="p">,</span> <span class="n">velscale</span><span class="o">=</span><span class="n">velscale</span><span class="p">,</span> <span class="n">vsyst</span><span class="o">=</span><span class="n">vsyst</span><span class="p">)[:</span><span class="nb">len</span><span class="p">(</span><span class="n">galaxy</span><span class="p">)]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">convolved_em_lines</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">galaxy</span><span class="p">)</span>
+
+
+    <span class="c1">#If we want to return the spectra, make empty lists to append to</span>
+    <span class="c1">#if ret_specs:</span>
+    <span class="n">lams</span><span class="o">=</span><span class="p">[]</span>
+    <span class="n">specs</span><span class="o">=</span><span class="p">[]</span>
+    <span class="n">temps</span><span class="o">=</span><span class="p">[]</span>
+    <span class="n">gas_lines</span><span class="o">=</span><span class="p">[]</span>
+    <span class="n">residuals</span><span class="o">=</span><span class="p">[]</span>
+    <span class="n">errors</span><span class="o">=</span><span class="p">[]</span>
+    <span class="n">skies</span><span class="o">=</span><span class="p">[]</span>
+    <span class="n">polys</span><span class="o">=</span><span class="p">[]</span>
+
+
+    <span class="c1">#Convolve with the instrumental resolution</span>
+    <span class="k">if</span> <span class="n">instrumental_resolution</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">temp</span><span class="o">=</span><span class="n">gaussian_filter1d</span><span class="p">(</span><span class="n">temp</span><span class="p">,</span> <span class="n">instrumental_resolution</span><span class="o">/</span><span class="n">velscale</span><span class="p">)</span>
+        <span class="c1">#Bit hacky</span>
+        <span class="c1">#Replace the first and last few values of temp (which get set to zero by the convolution)</span>
+        <span class="c1">#to the median value of the whole thing</span>
+        <span class="n">temp</span><span class="p">[</span><span class="n">temp</span><span class="o">==</span><span class="mi">0</span><span class="p">]</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">temp</span><span class="p">)</span>
+
+
+
+
+    <span class="c1">#Do the fitting</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">fit_range</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">fit_ranges</span><span class="p">):</span>
+
+        <span class="c1">#Mask around each fit range</span>
+        
+        <span class="n">gmask</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">logLam_gal</span><span class="p">)</span><span class="o">&gt;</span><span class="n">fit_range</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">logLam_gal</span><span class="p">)</span><span class="o">&lt;</span><span class="n">fit_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+        
+        <span class="n">g</span><span class="o">=</span><span class="n">galaxy</span><span class="p">[</span><span class="n">gmask</span><span class="p">]</span>
+        <span class="n">n</span><span class="o">=</span><span class="n">noise</span><span class="p">[</span><span class="n">gmask</span><span class="p">]</span>
+        <span class="n">t</span><span class="o">=</span><span class="n">temp</span><span class="p">[</span><span class="n">gmask</span><span class="p">]</span>
+        <span class="n">gas</span><span class="o">=</span><span class="n">convolved_em_lines</span><span class="p">[</span><span class="n">gmask</span><span class="p">]</span>
+
+
+        <span class="c1"># galmedian=np.median(g)</span>
+        <span class="c1"># tempmedian=np.median(t)</span>
+
+        <span class="c1"># g/=galmedian</span>
+        <span class="c1"># n/=galmedian</span>
+        <span class="c1"># t/=tempmedian</span>
+        
+        <span class="k">if</span> <span class="n">all_sky</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1">#Mask the sky spectra</span>
+            <span class="n">O2_s</span><span class="o">=</span><span class="n">O2_sky</span><span class="p">[</span><span class="n">gmask</span><span class="p">]</span>
+            <span class="n">s</span><span class="o">=</span><span class="n">base_sky</span><span class="p">[</span><span class="n">gmask</span><span class="p">]</span>
+            <span class="n">OH_s</span><span class="o">=</span><span class="n">OH_sky</span><span class="p">[</span><span class="n">gmask</span><span class="p">]</span>
+            <span class="n">NaD_s</span><span class="o">=</span><span class="n">NaD_sky</span><span class="p">[</span><span class="n">gmask</span><span class="p">]</span>
+
+            <span class="c1">#Make our sky model</span>
+            <span class="n">sky</span><span class="o">=</span><span class="n">O2_scale</span><span class="o">*</span><span class="n">O2_s</span><span class="o">+</span><span class="n">sky_scale</span><span class="o">*</span><span class="n">s</span><span class="o">+</span><span class="n">OH_scale</span><span class="o">*</span><span class="n">OH_s</span><span class="o">+</span><span class="n">NaD_sky_scale</span><span class="o">*</span><span class="n">NaD_s</span>
+            <span class="c1">#sky/=galmedian</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">sky</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">g</span><span class="p">)</span>
+
+
+
+        <span class="c1">#subtract the sky</span>
+        <span class="n">g_corrected</span><span class="o">=</span><span class="p">(</span><span class="n">g</span> <span class="o">-</span><span class="n">sky</span><span class="p">)</span>
+        
+
+        <span class="c1">#Order of the polynomial</span>
+        <span class="n">morder</span><span class="o">=</span><span class="nb">int</span><span class="p">((</span><span class="n">fit_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">fit_range</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">/</span><span class="mi">100</span><span class="p">)</span>
+        
+        
+        <span class="c1">#Fit the polynomials, weighting by the noise</span>
+        <span class="c1">#poly=C.fit_continuum(gmask[0], g/t, n**2, clip=[2, 10.0, 10.0], order=morder)</span>
+        <span class="n">poly</span><span class="o">=</span><span class="n">fit_legendre_polys</span><span class="p">(</span><span class="n">g_corrected</span><span class="o">/</span><span class="n">t</span><span class="p">,</span> <span class="n">morder</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="mf">1.0</span><span class="o">/</span><span class="n">n</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+
+        <span class="c1">#Scale the noise by some fraction ln_f</span>
+        <span class="n">n_corrected</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="mi">1</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">ln_f</span><span class="p">))</span><span class="o">*</span><span class="n">n</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>         
+
+        <span class="c1">#Calculate the chi_squared</span>
+        <span class="n">chisqs</span><span class="p">[</span><span class="n">gmask</span><span class="p">]</span><span class="o">=</span><span class="p">(((</span><span class="n">g_corrected</span> <span class="o">+</span> <span class="n">poly</span><span class="o">*</span><span class="n">gas</span> <span class="o">-</span><span class="n">t</span><span class="o">*</span><span class="n">poly</span><span class="p">)</span><span class="o">/</span><span class="n">n_corrected</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+
+        
+        <span class="n">lams</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">logLam_gal</span><span class="p">[</span><span class="n">gmask</span><span class="p">]))</span>
+        <span class="n">temps</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">poly</span><span class="o">*</span><span class="n">t</span><span class="p">)</span>
+        <span class="n">gas_lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">poly</span><span class="o">*</span><span class="n">gas</span><span class="p">)</span>
+        <span class="n">residuals</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">g_corrected</span> <span class="o">+</span> <span class="n">poly</span><span class="o">*</span><span class="n">gas</span><span class="o">-</span><span class="n">poly</span><span class="o">*</span><span class="n">t</span><span class="p">)</span>
+        <span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">n_corrected</span><span class="p">)</span>
+        <span class="n">specs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">g_corrected</span><span class="p">)</span>
+        <span class="n">skies</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sky</span><span class="p">)</span>
+        <span class="n">polys</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">poly</span><span class="p">)</span>
+
+
+
+    <span class="c1">#We may have a gap in the ranges we want to fit over</span>
+    <span class="c1">#This ensures that only pixels in the fit ranges contribute to the chisquared</span>
+    <span class="n">all_fit_ranges_mask</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">galaxy</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">fit_range</span> <span class="ow">in</span> <span class="n">fit_ranges</span><span class="p">:</span>
+        <span class="n">this_fit_range_mask</span><span class="o">=</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">logLam_gal</span><span class="p">)</span><span class="o">&gt;</span><span class="n">fit_range</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">logLam_gal</span><span class="p">)</span><span class="o">&lt;</span><span class="n">fit_range</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">all_fit_ranges_mask</span><span class="p">[</span><span class="n">this_fit_range_mask</span><span class="p">]</span><span class="o">=</span><span class="mi">1</span>
+
+
+    <span class="c1">#Sum the chisquareds, masking out the pixels we don&#39;t want</span>
+    <span class="n">chisq</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">chisqs</span><span class="o">*</span><span class="n">weights</span><span class="p">)[</span><span class="n">all_fit_ranges_mask</span><span class="p">])</span>
+
+    <span class="c1">#Count all of the things we&#39;re varying</span>
+    <span class="n">n_variables</span><span class="o">=</span><span class="nb">len</span><span class="p">([</span><span class="n">thing</span> <span class="k">for</span> <span class="n">thing</span> <span class="ow">in</span> <span class="n">theta</span> <span class="k">if</span> <span class="n">theta</span><span class="p">[</span><span class="n">thing</span><span class="p">]</span><span class="o">.</span><span class="n">vary</span><span class="p">])</span>
+
+    
+    <span class="n">n_masked_pixels</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">weights</span><span class="p">[</span><span class="n">all_fit_ranges_mask</span><span class="p">]</span><span class="o">==</span><span class="mi">0</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">n_dof</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">chisqs</span><span class="p">[</span><span class="n">all_fit_ranges_mask</span><span class="p">])</span> <span class="o">-</span> <span class="n">n_masked_pixels</span> <span class="o">-</span> <span class="n">n_variables</span>  
+            
+    <span class="c1">###########################################################################</span>
+
+       
+    <span class="n">lam</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">lams</span><span class="p">)</span>
+    <span class="n">t</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">temps</span><span class="p">)</span>
+    <span class="n">e</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">errors</span><span class="p">)</span>
+    <span class="n">s</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">specs</span><span class="p">)</span>
+    <span class="n">skies</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">skies</span><span class="p">)</span>
+    <span class="n">g_lines</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">gas_lines</span><span class="p">)</span>
+    <span class="n">p</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">polys</span><span class="p">)</span>
+    <span class="n">w</span><span class="o">=</span><span class="n">weights</span><span class="p">[</span><span class="n">all_fit_ranges_mask</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">bool</span><span class="p">)</span>
+
+
+    <span class="c1">#Log likelihood- chisqaured plus sum of errors, which now depend on ln_f</span>
+    <span class="n">likelihood</span><span class="o">=-</span><span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">chisq</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">e</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="n">w</span><span class="p">))</span>
+
+
+    <span class="k">if</span> <span class="n">ret_specs</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">likelihood</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.0</span><span class="o">*</span><span class="n">likelihood</span><span class="o">/</span><span class="n">n_dof</span><span class="p">,</span> <span class="p">[</span><span class="n">lam</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">skies</span><span class="p">,</span> <span class="n">g_lines</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">w</span><span class="p">]</span>  
+
+    <span class="k">return</span> <span class="n">likelihood</span></div>
+
+
+<div class="viewcode-block" id="init"><a class="viewcode-back" href="../source/SpectralFitting_functs.html#SpectralFitting_functs.init">[docs]</a><span class="k">def</span> <span class="nf">init</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    
+    <span class="k">global</span> <span class="n">parameters</span><span class="p">,</span> <span class="n">logLam</span>
+    <span class="n">parameters</span><span class="p">,</span> <span class="n">logLam</span><span class="p">,</span> <span class="n">ndim</span><span class="o">=</span><span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="fit_legendre_polys"><a class="viewcode-back" href="../source/SpectralFitting_functs.html#SpectralFitting_functs.fit_legendre_polys">[docs]</a><span class="k">def</span> <span class="nf">fit_legendre_polys</span><span class="p">(</span><span class="n">ratio</span><span class="p">,</span> <span class="n">morder</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+
+    <span class="n">x_vals</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">ratio</span><span class="p">))</span>
+    <span class="n">coeffs</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">polynomial</span><span class="o">.</span><span class="n">legendre</span><span class="o">.</span><span class="n">legfit</span><span class="p">(</span><span class="n">x_vals</span><span class="p">,</span> <span class="n">ratio</span><span class="p">,</span> <span class="n">morder</span><span class="p">,</span> <span class="n">w</span><span class="o">=</span><span class="n">weights</span><span class="p">)</span>
+
+    <span class="n">polynomial</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">polynomial</span><span class="o">.</span><span class="n">legendre</span><span class="o">.</span><span class="n">legval</span><span class="p">(</span><span class="n">x_vals</span><span class="p">,</span> <span class="n">coeffs</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">polynomial</span></div>
+
+<div class="viewcode-block" id="make_mask"><a class="viewcode-back" href="../source/SpectralFitting_functs.html#SpectralFitting_functs.make_mask">[docs]</a><span class="k">def</span> <span class="nf">make_mask</span><span class="p">(</span><span class="n">lamdas</span><span class="p">,</span> <span class="n">wavelengths</span><span class="p">):</span>
+    <span class="n">mask</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">lamdas</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">pair</span> <span class="ow">in</span> <span class="n">wavelengths</span><span class="p">:</span>
+        <span class="n">low</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="n">pair</span>
+        <span class="c1">#import pdb; pdb.set_trace()</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">mask</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">lamdas</span><span class="o">&lt;</span><span class="n">low</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">lamdas</span><span class="o">&gt;</span><span class="n">high</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">mask</span></div>
+
+
+<span class="c1">###############################################################################</span>
+<span class="c1">#FUNCTIONS TAKEN FROM MICHELE CAPPELLARI&#39;S pPXF CODE</span>
+<span class="c1">#</span>
+<span class="c1"># Copyright (C) 2001-2016, Michele Cappellari</span>
+<span class="c1"># E-mail: michele.cappellari_at_physics.ox.ac.uk</span>
+<span class="c1">#</span>
+<span class="c1"># Updated versions of the software are available from my web page</span>
+<span class="c1"># http://purl.org/cappellari/software</span>
+<span class="c1">#</span>
+<span class="c1"># If you have found this software useful for your research,</span>
+<span class="c1"># I would appreciate an acknowledgment to the use of the</span>
+<span class="c1"># &quot;Penalized Pixel-Fitting method by Cappellari &amp; Emsellem (2004)&quot;</span>
+<span class="c1">#  and/or &quot;by Cappellari (2017)&quot; if you use the new features.</span>
+<span class="c1">#</span>
+<span class="c1"># This software is provided as is without any warranty whatsoever.</span>
+<span class="c1"># Permission to use, for non-commercial purposes is granted.</span>
+<span class="c1"># Permission to modify for personal or internal use is granted,</span>
+<span class="c1"># provided this copyright and disclaimer are included unchanged</span>
+<span class="c1"># at the beginning of the file. All other rights are reserved.</span>
+<span class="c1">#</span>
+<span class="c1">################################################################################</span>
+
+<div class="viewcode-block" id="emline"><a class="viewcode-back" href="../source/SpectralFitting_functs.html#SpectralFitting_functs.emline">[docs]</a><span class="k">def</span> <span class="nf">emline</span><span class="p">(</span><span class="n">logLam_temp</span><span class="p">,</span> <span class="n">line_wave</span><span class="p">,</span> <span class="n">FWHM_gal</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Instrumental Gaussian line spread function integrated within the</span>
+<span class="sd">    pixels borders. The function is normalized in such a way that</span>
+
+<span class="sd">        integ.sum() = 1</span>
+
+<span class="sd">    For sigma=FWHM_gal/2.355 larger than one pixels, this function</span>
+<span class="sd">    quickly converges to the normalized Gaussian function:</span>
+
+<span class="sd">        gauss = dLogLam * np.exp(-0.5*(x/xsig)**2) / (np.sqrt(2*np.pi)*xsig)</span>
+
+<span class="sd">    :param logLam_temp: np.log(wavelength) in Angstrom</span>
+<span class="sd">    :param line_wave: lines wavelength in Angstrom</span>
+<span class="sd">    :param FWHM_gal: FWHM in Angstrom. This can be a scalar or the</span>
+<span class="sd">        name of a function wich returns the FWHM for given wavelength.</span>
+<span class="sd">    :return: LSF computed for every logLam_temp</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">callable</span><span class="p">(</span><span class="n">FWHM_gal</span><span class="p">):</span>
+        <span class="n">FWHM_gal</span> <span class="o">=</span> <span class="n">FWHM_gal</span><span class="p">(</span><span class="n">line_wave</span><span class="p">)</span>
+
+    <span class="c1"># Compute pixels borders for Gaussian integration</span>
+    <span class="n">logLamBorders</span> <span class="o">=</span> <span class="p">(</span><span class="n">logLam_temp</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">+</span> <span class="n">logLam_temp</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">/</span><span class="mi">2</span>
+    <span class="n">xsig</span> <span class="o">=</span> <span class="n">FWHM_gal</span><span class="o">/</span><span class="mf">2.355</span><span class="o">/</span><span class="n">line_wave</span>    <span class="c1"># sigma in x=logLambda units</span>
+
+    <span class="c1"># Perform pixel integration</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">logLamBorders</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">line_wave</span><span class="p">)</span>
+    <span class="n">integ</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">special</span><span class="o">.</span><span class="n">erf</span><span class="p">(</span><span class="n">x</span><span class="o">/</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="n">xsig</span><span class="p">)),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">integ</span><span class="p">,</span> <span class="p">((</span><span class="mi">1</span><span class="p">,),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,)),</span> <span class="s1">&#39;constant&#39;</span><span class="p">)</span></div>
+
+<span class="c1">###############################################################################</span>
+<span class="c1"># NAME:</span>
+<span class="c1">#   EMISSION_LINES</span>
+<span class="c1">#</span>
+<span class="c1"># MODIFICATION HISTORY:</span>
+<span class="c1">#   V1.0.0: Michele Cappellari, Oxford, 7 January 2014</span>
+<span class="c1">#   V1.1.0: Fixes [OIII] and [NII] doublets to the theoretical flux ratio.</span>
+<span class="c1">#       Returns line names together with emission lines templates.</span>
+<span class="c1">#       MC, Oxford, 3 August 2014</span>
+<span class="c1">#   V1.1.1: Only returns lines included within the estimated fitted wavelength range.</span>
+<span class="c1">#       This avoids identically zero gas templates being included in the PPXF fit</span>
+<span class="c1">#       which can cause numerical instabilities in the solution of the system.</span>
+<span class="c1">#       MC, Oxford, 3 September 2014</span>
+<span class="c1">#   V1.2.0: Perform integration over the pixels of the Gaussian line spread function</span>
+<span class="c1">#       using the new function emline(). Thanks to Eric Emsellem for the suggestion.</span>
+<span class="c1">#       MC, Oxford, 10 August 2016</span>
+<span class="c1">#   V1.2.1: Allow FWHM_gal to be a function of wavelength. MC, Oxford, 16 August 2016</span>
+
+<div class="viewcode-block" id="emission_lines"><a class="viewcode-back" href="../source/SpectralFitting_functs.html#SpectralFitting_functs.emission_lines">[docs]</a><span class="k">def</span> <span class="nf">emission_lines</span><span class="p">(</span><span class="n">logLam_temp</span><span class="p">,</span> <span class="n">lamRange_gal</span><span class="p">,</span> <span class="n">FWHM_gal</span><span class="p">,</span> <span class="n">quiet</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Generates an array of Gaussian emission lines to be used as gas templates in PPXF.</span>
+<span class="sd">    These templates represent the instrumental line spread function (LSF) at the</span>
+<span class="sd">    set of wavelengths of each emission line.</span>
+
+<span class="sd">    Additional lines can be easily added by editing the code of this procedure,</span>
+<span class="sd">    which is meant as a template to be modified by the users where needed.</span>
+
+<span class="sd">    For accuracy the Gaussians are integrated over the pixels boundaries.</span>
+<span class="sd">    This integration is only useful for quite unresolved Gaussians but one should</span>
+<span class="sd">    keep in mind that, if the LSF is not well resolved, the input spectrum is not</span>
+<span class="sd">    properly sampled and one is wasting useful information from the spectrograph!</span>
+
+<span class="sd">    The [OI], [OIII] and [NII] doublets are fixed at theoretical flux ratio~3.</span>
+
+<span class="sd">    :param logLam_temp: is the natural log of the wavelength of the templates in</span>
+<span class="sd">        Angstrom. logLam_temp should be the same as that of the stellar templates.</span>
+<span class="sd">    :param lamRange_gal: is the estimated rest-frame fitted wavelength range</span>
+<span class="sd">        Typically lamRange_gal = np.array([np.min(wave), np.max(wave)])/(1 + z),</span>
+<span class="sd">        where wave is the observed wavelength of the fitted galaxy pixels and</span>
+<span class="sd">        z is an initial rough estimate of the galaxy redshift.</span>
+<span class="sd">    :param FWHM_gal: is the instrumantal FWHM of the galaxy spectrum under study</span>
+<span class="sd">        in Angstrom. One can pass either a scalar or the name &quot;func&quot; of a function</span>
+<span class="sd">        func(wave) which returns the FWHM for a given vector of input wavelengths.</span>
+<span class="sd">    :return: emission_lines, line_names, line_wave</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Balmer Series:      Hdelta   Hgamma    Hbeta   Halpha</span>
+    <span class="n">line_wave</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">4101.76</span><span class="p">,</span> <span class="mf">4340.47</span><span class="p">,</span> <span class="mf">4861.33</span><span class="p">,</span> <span class="mf">6562.80</span><span class="p">])</span>  <span class="c1"># air wavelengths</span>
+    <span class="n">line_names</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="s1">&#39;Hdelta&#39;</span><span class="p">,</span> <span class="s1">&#39;Hgamma&#39;</span><span class="p">,</span> <span class="s1">&#39;Hbeta&#39;</span><span class="p">,</span> <span class="s1">&#39;Halpha&#39;</span><span class="p">])</span>
+    <span class="n">emission_lines</span> <span class="o">=</span> <span class="n">emline</span><span class="p">(</span><span class="n">logLam_temp</span><span class="p">,</span> <span class="n">line_wave</span><span class="p">,</span> <span class="n">FWHM_gal</span><span class="p">)</span>
+
+    <span class="c1">#                 -----[OII]-----    -----[SII]-----</span>
+    <span class="n">lines</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">3726.03</span><span class="p">,</span> <span class="mf">3728.82</span><span class="p">,</span> <span class="mf">6716.47</span><span class="p">,</span> <span class="mf">6730.85</span><span class="p">])</span>  <span class="c1"># air wavelengths</span>
+    <span class="n">names</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="s1">&#39;[OII]3726&#39;</span><span class="p">,</span> <span class="s1">&#39;[OII]3729&#39;</span><span class="p">,</span> <span class="s1">&#39;[SII]6716&#39;</span><span class="p">,</span> <span class="s1">&#39;[SII]6731&#39;</span><span class="p">])</span>
+    <span class="n">gauss</span> <span class="o">=</span> <span class="n">emline</span><span class="p">(</span><span class="n">logLam_temp</span><span class="p">,</span> <span class="n">lines</span><span class="p">,</span> <span class="n">FWHM_gal</span><span class="p">)</span>
+    <span class="n">emission_lines</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">emission_lines</span><span class="p">,</span> <span class="n">gauss</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">line_names</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line_names</span><span class="p">,</span> <span class="n">names</span><span class="p">)</span>
+    <span class="n">line_wave</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line_wave</span><span class="p">,</span> <span class="n">lines</span><span class="p">)</span>
+
+    <span class="c1"># To keep the flux ratio of a doublet fixed, we place the two lines in a single template</span>
+    <span class="c1">#                 -----[OIII]-----</span>
+    <span class="n">lines</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">4958.92</span><span class="p">,</span> <span class="mf">5006.84</span><span class="p">])</span>    <span class="c1"># air wavelengths</span>
+    <span class="n">doublet</span> <span class="o">=</span> <span class="mf">0.33</span><span class="o">*</span><span class="n">emline</span><span class="p">(</span><span class="n">logLam_temp</span><span class="p">,</span> <span class="n">lines</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">FWHM_gal</span><span class="p">)</span> <span class="o">+</span> <span class="n">emline</span><span class="p">(</span><span class="n">logLam_temp</span><span class="p">,</span> <span class="n">lines</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">FWHM_gal</span><span class="p">)</span>
+    <span class="n">emission_lines</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">emission_lines</span><span class="p">,</span> <span class="n">doublet</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">line_names</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line_names</span><span class="p">,</span> <span class="s1">&#39;[OIII]5007d&#39;</span><span class="p">)</span> <span class="c1"># single template for this doublet</span>
+    <span class="n">line_wave</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line_wave</span><span class="p">,</span> <span class="n">lines</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+
+    <span class="c1"># To keep the flux ratio of a doublet fixed, we place the two lines in a single template</span>
+    <span class="c1">#                  -----[OI]-----</span>
+    <span class="n">lines</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">6300.30</span><span class="p">,</span> <span class="mf">6363.67</span><span class="p">])</span>    <span class="c1"># air wavelengths</span>
+    <span class="n">doublet</span> <span class="o">=</span> <span class="n">emline</span><span class="p">(</span><span class="n">logLam_temp</span><span class="p">,</span> <span class="n">lines</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">FWHM_gal</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.33</span><span class="o">*</span><span class="n">emline</span><span class="p">(</span><span class="n">logLam_temp</span><span class="p">,</span> <span class="n">lines</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">FWHM_gal</span><span class="p">)</span>
+    <span class="n">emission_lines</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">emission_lines</span><span class="p">,</span> <span class="n">doublet</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">line_names</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line_names</span><span class="p">,</span> <span class="s1">&#39;[OI]6300d&#39;</span><span class="p">)</span> <span class="c1"># single template for this doublet</span>
+    <span class="n">line_wave</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line_wave</span><span class="p">,</span> <span class="n">lines</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+    <span class="c1"># To keep the flux ratio of a doublet fixed, we place the two lines in a single template</span>
+    <span class="c1">#                 -----[NII]-----</span>
+    <span class="n">lines</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">6548.03</span><span class="p">,</span> <span class="mf">6583.41</span><span class="p">])</span>    <span class="c1"># air wavelengths</span>
+    <span class="n">doublet</span> <span class="o">=</span> <span class="mf">0.33</span><span class="o">*</span><span class="n">emline</span><span class="p">(</span><span class="n">logLam_temp</span><span class="p">,</span> <span class="n">lines</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">FWHM_gal</span><span class="p">)</span> <span class="o">+</span> <span class="n">emline</span><span class="p">(</span><span class="n">logLam_temp</span><span class="p">,</span> <span class="n">lines</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">FWHM_gal</span><span class="p">)</span>
+    <span class="n">emission_lines</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">emission_lines</span><span class="p">,</span> <span class="n">doublet</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">line_names</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line_names</span><span class="p">,</span> <span class="s1">&#39;[NII]6583d&#39;</span><span class="p">)</span> <span class="c1"># single template for this doublet</span>
+    <span class="n">line_wave</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line_wave</span><span class="p">,</span> <span class="n">lines</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+
+    <span class="c1"># Only include lines falling within the estimated fitted wavelength range.</span>
+    <span class="c1"># This is important to avoid instabilities in the pPXF system solution</span>
+    <span class="c1">#</span>
+    <span class="n">w</span> <span class="o">=</span> <span class="p">(</span><span class="n">line_wave</span> <span class="o">&gt;</span> <span class="n">lamRange_gal</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">line_wave</span> <span class="o">&lt;</span> <span class="n">lamRange_gal</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">emission_lines</span> <span class="o">=</span> <span class="n">emission_lines</span><span class="p">[:,</span> <span class="n">w</span><span class="p">]</span>
+    <span class="n">line_names</span> <span class="o">=</span> <span class="n">line_names</span><span class="p">[</span><span class="n">w</span><span class="p">]</span>
+    <span class="n">line_wave</span> <span class="o">=</span> <span class="n">line_wave</span><span class="p">[</span><span class="n">w</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">quiet</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Emission lines included in gas templates:&#39;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">line_names</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">emission_lines</span><span class="p">,</span> <span class="n">line_names</span><span class="p">,</span> <span class="n">line_wave</span></div>
+
+<span class="c1">###############################################################################</span>
+
+
+<span class="c1">###############################################################################</span>
+<span class="c1">#</span>
+<span class="c1"># NAME:</span>
+<span class="c1">#   LOG_REBIN</span>
+<span class="c1">#</span>
+<span class="c1"># MODIFICATION HISTORY:</span>
+<span class="c1">#   V1.0.0: Using interpolation. Michele Cappellari, Leiden, 22 October 2001</span>
+<span class="c1">#   V2.0.0: Analytic flux conservation. MC, Potsdam, 15 June 2003</span>
+<span class="c1">#   V2.1.0: Allow a velocity scale to be specified by the user.</span>
+<span class="c1">#       MC, Leiden, 2 August 2003</span>
+<span class="c1">#   V2.2.0: Output the optional logarithmically spaced wavelength at the</span>
+<span class="c1">#       geometric mean of the wavelength at the border of each pixel.</span>
+<span class="c1">#       Thanks to Jesus Falcon-Barroso. MC, Leiden, 5 November 2003</span>
+<span class="c1">#   V2.2.1: Verify that lamRange[0] &lt; lamRange[1].</span>
+<span class="c1">#       MC, Vicenza, 29 December 2004</span>
+<span class="c1">#   V2.2.2: Modified the documentation after feedback from James Price.</span>
+<span class="c1">#       MC, Oxford, 21 October 2010</span>
+<span class="c1">#   V2.3.0: By default now preserve the shape of the spectrum, not the</span>
+<span class="c1">#       total flux. This seems what most users expect from the procedure.</span>
+<span class="c1">#       Set the keyword /FLUX to preserve flux like in previous version.</span>
+<span class="c1">#       MC, Oxford, 30 November 2011</span>
+<span class="c1">#   V3.0.0: Translated from IDL into Python. MC, Santiago, 23 November 2013</span>
+<span class="c1">#   V3.1.0: Fully vectorized log_rebin. Typical speed up by two orders of magnitude.</span>
+<span class="c1">#       MC, Oxford, 4 March 2014</span>
+<span class="c1">#   V3.1.1: Updated documentation. MC, Oxford, 16 August 2016</span>
+
+<div class="viewcode-block" id="log_rebin"><a class="viewcode-back" href="../source/SpectralFitting_functs.html#SpectralFitting_functs.log_rebin">[docs]</a><span class="k">def</span> <span class="nf">log_rebin</span><span class="p">(</span><span class="n">lamRange</span><span class="p">,</span> <span class="n">spec</span><span class="p">,</span> <span class="n">oversample</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">velscale</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">flux</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Logarithmically rebin a spectrum, while rigorously conserving the flux.</span>
+<span class="sd">    Basically the photons in the spectrum are simply redistributed according</span>
+<span class="sd">    to a new grid of pixels, with non-uniform size in the spectral direction.</span>
+<span class="sd">    </span>
+<span class="sd">    When the flux keyword is set, this program performs an exact integration </span>
+<span class="sd">    of the original spectrum, assumed to be a step function within the </span>
+<span class="sd">    linearly-spaced pixels, onto the new logarithmically-spaced pixels. </span>
+<span class="sd">    The output was tested to agree with the analytic solution.</span>
+
+<span class="sd">    :param lamRange: two elements vector containing the central wavelength</span>
+<span class="sd">        of the first and last pixels in the spectrum, which is assumed</span>
+<span class="sd">        to have constant wavelength scale! E.g. from the values in the</span>
+<span class="sd">        standard FITS keywords: LAMRANGE = CRVAL1 + [0, CDELT1*(NAXIS1 - 1)].</span>
+<span class="sd">        It must be LAMRANGE[0] &lt; LAMRANGE[1].</span>
+<span class="sd">    :param spec: input spectrum.</span>
+<span class="sd">    :param oversample: can be used, not to loose spectral resolution,</span>
+<span class="sd">        especally for extended wavelength ranges and to avoid aliasing.</span>
+<span class="sd">        Default: OVERSAMPLE=1 ==&gt; Same number of output pixels as input.</span>
+<span class="sd">    :param velscale: velocity scale in km/s per pixels. If this variable is</span>
+<span class="sd">        not defined, then it will contain in output the velocity scale.</span>
+<span class="sd">        If this variable is defined by the user it will be used</span>
+<span class="sd">        to set the output number of pixels and wavelength scale.</span>
+<span class="sd">    :param flux: (boolean) True to preserve total flux. In this case the</span>
+<span class="sd">        log rebinning changes the pixels flux in proportion to their</span>
+<span class="sd">        dLam so the following command will show large differences</span>
+<span class="sd">        beween the spectral shape before and after LOG_REBIN:</span>
+<span class="sd">           plt.plot(exp(logLam), specNew)  # Plot log-rebinned spectrum</span>
+<span class="sd">           plt.plot(np.linspace(lamRange[0], lamRange[1], spec.size), spec)</span>
+<span class="sd">        By defaul, when this is False, the above two lines produce</span>
+<span class="sd">        two spectra that almost perfectly overlap each other.</span>
+<span class="sd">    :return: [specNew, logLam, velscale] where logLam is the natural</span>
+<span class="sd">        logarithm of the wavelength and velscale is in km/s.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">lamRange</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">lamRange</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">lamRange</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;lamRange must contain two elements&#39;</span>
+    <span class="k">assert</span> <span class="n">lamRange</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">lamRange</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="s1">&#39;It must be lamRange[0] &lt; lamRange[1]&#39;</span>
+    <span class="k">assert</span> <span class="n">spec</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;input spectrum must be a vector&#39;</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">n</span><span class="o">*</span><span class="n">oversample</span><span class="p">)</span>
+
+    <span class="n">dLam</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">lamRange</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="mf">1.</span><span class="p">)</span>        <span class="c1"># Assume constant dLam</span>
+    <span class="n">lim</span> <span class="o">=</span> <span class="n">lamRange</span><span class="o">/</span><span class="n">dLam</span> <span class="o">+</span> <span class="p">[</span><span class="o">-</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">]</span>        <span class="c1"># All in units of dLam</span>
+    <span class="n">borders</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">*</span><span class="n">lim</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>     <span class="c1"># Linearly</span>
+    <span class="n">logLim</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">lim</span><span class="p">)</span>
+
+    <span class="n">c</span> <span class="o">=</span> <span class="mf">299792.458</span>                           <span class="c1"># Speed of light in km/s</span>
+    <span class="k">if</span> <span class="n">velscale</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>                     <span class="c1"># Velocity scale is set by user</span>
+        <span class="n">velscale</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">logLim</span><span class="p">)</span><span class="o">/</span><span class="n">m</span><span class="o">*</span><span class="n">c</span>       <span class="c1"># Only for output</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">logScale</span> <span class="o">=</span> <span class="n">velscale</span><span class="o">/</span><span class="n">c</span>
+        <span class="n">m</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">logLim</span><span class="p">)</span><span class="o">/</span><span class="n">logScale</span><span class="p">)</span>    <span class="c1"># Number of output pixels</span>
+        <span class="n">logLim</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">logLim</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">m</span><span class="o">*</span><span class="n">logScale</span>
+
+    <span class="n">newBorders</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">*</span><span class="n">logLim</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="n">m</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span> <span class="c1"># Logarithmically</span>
+    <span class="n">k</span> <span class="o">=</span> <span class="p">(</span><span class="n">newBorders</span> <span class="o">-</span> <span class="n">lim</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+
+    <span class="n">specNew</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">add</span><span class="o">.</span><span class="n">reduceat</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="n">k</span><span class="p">)[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>  <span class="c1"># Do analytic integral</span>
+    <span class="n">specNew</span> <span class="o">*=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>    <span class="c1"># fix for design flaw of reduceat()</span>
+    <span class="n">specNew</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">((</span><span class="n">newBorders</span> <span class="o">-</span> <span class="n">borders</span><span class="p">[</span><span class="n">k</span><span class="p">])</span><span class="o">*</span><span class="n">spec</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">flux</span><span class="p">:</span>
+        <span class="n">specNew</span> <span class="o">/=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">newBorders</span><span class="p">)</span>
+
+    <span class="c1"># Output log(wavelength): log of geometric mean</span>
+    <span class="n">logLam</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">newBorders</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span><span class="o">*</span><span class="n">newBorders</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">*</span><span class="n">dLam</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">specNew</span><span class="p">,</span> <span class="n">logLam</span><span class="p">,</span> <span class="n">velscale</span></div>
+
+<span class="c1">###############################################################################</span>
+<span class="c1"># NAME:</span>
+<span class="c1">#   GAUSSIAN_FILTER1D</span>
+<span class="c1">#</span>
+<span class="c1"># MODIFICATION HISTORY:</span>
+<span class="c1">#   V1.0.0: Written as a replacement for the Scipy routine with the same name,</span>
+<span class="c1">#       to be used with variable sigma per pixel. MC, Oxford, 10 October 2015</span>
+
+<div class="viewcode-block" id="gaussian_filter1d"><a class="viewcode-back" href="../source/SpectralFitting_functs.html#SpectralFitting_functs.gaussian_filter1d">[docs]</a><span class="k">def</span> <span class="nf">gaussian_filter1d</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="n">sig</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convolve a spectrum by a Gaussian with different sigma for every pixel.</span>
+<span class="sd">    If all sigma are the same this routine produces the same output as</span>
+<span class="sd">    scipy.ndimage.gaussian_filter1d, except for the border treatment.</span>
+<span class="sd">    Here the first/last p pixels are filled with zeros.</span>
+<span class="sd">    When creating a template library for SDSS data, this implementation</span>
+<span class="sd">    is 60x faster than a naive for loop over pixels.</span>
+
+<span class="sd">    :param spec: vector with the spectrum to convolve</span>
+<span class="sd">    :param sig: vector of sigma values (in pixels) for every pixel</span>
+<span class="sd">    :return: spec convolved with a Gaussian with dispersion sig</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">sig</span> <span class="o">=</span> <span class="n">sig</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="mf">0.01</span><span class="p">)</span>  <span class="c1"># forces zero sigmas to have 0.01 pixels</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="mi">3</span><span class="o">*</span><span class="n">sig</span><span class="p">)))</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="n">p</span> <span class="o">+</span> <span class="mi">1</span>  <span class="c1"># kernel size</span>
+    <span class="n">x2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="n">p</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">m</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span>
+
+    <span class="n">n</span> <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">size</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>   <span class="c1"># Loop over the small size of the kernel</span>
+        <span class="n">a</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">p</span><span class="p">:</span><span class="o">-</span><span class="n">p</span><span class="p">]</span> <span class="o">=</span> <span class="n">spec</span><span class="p">[</span><span class="n">j</span><span class="p">:</span><span class="n">n</span><span class="o">-</span><span class="n">m</span><span class="o">+</span><span class="n">j</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="n">gau</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">x2</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">sig</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+    <span class="n">gau</span> <span class="o">/=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">gau</span><span class="p">,</span> <span class="mi">0</span><span class="p">)[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>  <span class="c1"># Normalize kernel</span>
+
+    <span class="n">conv_spectrum</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">a</span><span class="o">*</span><span class="n">gau</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">conv_spectrum</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Sam Vaughan.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

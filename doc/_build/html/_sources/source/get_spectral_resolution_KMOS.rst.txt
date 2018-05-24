@@ -1,0 +1,7 @@
+get\_spectral\_resolution\_KMOS module
+======================================
+
+.. automodule:: get_spectral_resolution_KMOS
+    :members:
+    :undoc-members:
+    :show-inheritance:
