@@ -4,7 +4,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import numpy as np 
 import scipy.constants as const
 import SpectralFitting_functs as SF
-from stellarpops.tools import fspTools as FT
+import CvD_SSP_tools as CvDTools
 
 
 #ToDo:
@@ -110,8 +110,8 @@ class SpectralFit(object):
 
     def prepare_CVD2_interpolators(self):
 
-        self.linear_interp, self.logLam_template =FT.prepare_CvD_interpolator_twopartIMF(self.lam_range_temp, self.velscale, verbose=True)
-        self.correction_interps, self.log_lam_template=FT.prepare_CvD_correction_interpolators(self.lam_range_temp, self.velscale, self.elements_to_fit, verbose=True, element_imf=self.element_imf)
+        self.linear_interp, self.logLam_template =CvDTools.prepare_CvD_interpolator_twopartIMF(self.lam_range_temp, self.velscale, verbose=True)
+        self.correction_interps, self.log_lam_template=CvDTools.prepare_CvD_correction_interpolators(self.lam_range_temp, self.velscale, self.elements_to_fit, verbose=True, element_imf=self.element_imf)
 
     def get_emission_lines(self):
 
