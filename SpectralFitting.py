@@ -29,6 +29,9 @@ class SpectralFit(object):
         if not np.all(np.array([flux.ndim, lamdas.ndim, noise.ndim]) ==1):
             raise ValueError('LAMDAS, FLUX and NOISE must all be 1D arrays')
 
+        if not len(np.unique(np.ediff1d(lamdas)))==1:
+            raise ValueError('LAMDAS must be on a uniform wavelength grid, with no jumps or changes in wavelength spacing!')
+
         if instrumental_resolution is not None:
             if not np.unique(np.array([flux.size, lamdas.size, noise.size, instrumental_resolution.size])).size == 1:
                 raise ValueError('If INSTRUMENTAL_RESOLUTION is given, it must be the same length as FLUX, LAMDAS and NOISE')
