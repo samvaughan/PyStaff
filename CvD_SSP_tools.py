@@ -2,7 +2,7 @@ import numpy as np
 import scipy.constants as const
 from astropy.io import fits
 import scipy.interpolate as si
-
+import glob
 import SpectralFitting_functs as SF
 
 class Spectrum(object):
@@ -145,6 +145,31 @@ class Spectrum(object):
         else:
             self.__userdict__ = None
 
+def checkDims(var, varname, parentShape):
+    assert (np.isscalar(var)) or (np.all(np.equal(np.array(var).shape,parentShape))), varname+" dimensions not understood."
+
+def singleOrList2Array(invar):
+    """
+    If a single value, leave. If a list, convert to array. If array, leave as array.
+    But for size-1 arrays/lits, convert back to scalar.
+    """
+
+    if isinstance(invar, list):
+        # convert to array unless size-1
+        rval = np.squeeze(np.array(invar))
+        if rval.size==1:
+            rval = np.asscalar(rval)
+    elif isinstance(invar, np.ndarray):
+        # leave except if size-1
+        rval = np.squeeze(invar)
+        if rval.size==1:
+            rval = np.asscalar(rval)
+    else:
+        # leave
+        rval = invar
+    # return
+    return rval
+
 def load_varelem_CvD16ssps(dirname='/Data/stellarpops/CvD2', folder='atlas_rfn_v3', imf='kroupa', verbose=True):
 
     '''
@@ -235,6 +260,118 @@ def prepare_CvD_interpolator_twopartIMF(templates_lam_range, velscale, verbose=T
 
 ################################################################################################################################################################
 
+def prepare_CvD2_templates_twopartIMF(templates_lam_range, velscale, verbose=True):
+    import glob
+    import os
+    template_glob=os.path.expanduser('~/z/Data/stellarpops/CvD2/vcj_twopartimf/vcj_ssp_v8/VCJ_v8_mcut0.08_t*')
+
+    vcj_models=sorted(glob.glob(template_glob))
+    models=np.genfromtxt(vcj_models[-1])
+
+    temp_lamdas=models[:, 0]
+
+    n_ages=7
+    n_zs=5
+    n_imfs=16
+
+    
+
+
+    Zs=['m1.5', 'm1.0', 'm0.5', 'p0.0', 'p0.2']
+    ages=['01.0', '03.0', '05.0', '07.0', '09.0', '11.0', '13.5']
+    imfs_X1=0.5+np.arange(n_imfs)/5.0
+    imfs_X2=0.5+np.arange(n_imfs)/5.0
+
+    t_mask = ((temp_lamdas > templates_lam_range[0]) & (temp_lamdas <templates_lam_range[1]))
+
+
+
+    y=models[t_mask, 1]
+    x=temp_lamdas[t_mask]
+    #Make a new lamda array, carrying on the delta lamdas of high resolution bit
+    new_x=temp_lamdas[t_mask][0]+0.9*(np.arange(np.ceil((temp_lamdas[t_mask][-1]-temp_lamdas[t_mask][0])/0.9))+1)
+    interp=si.interp1d(x, y, fill_value='extrapolate')
+    out=interp(new_x)
+
+    sspNew, logLam_template, template_velscale = SF.log_rebin(templates_lam_range, out, velscale=velscale)
+    templates=np.empty((len(sspNew), n_ages, n_zs, len(imfs_X1), len(imfs_X2)))
+
+    #Resolution of the templates in km/s
+
+    for a, Z in enumerate(Zs):    
+        for b, age in enumerate(ages):
+            model=glob.glob(os.path.expanduser('~/z/Data/stellarpops/CvD2/vcj_twopartimf/vcj_ssp_v8/VCJ_v8_mcut0.08_t{}*{}.ssp.imf_varydoublex.s100'.format(age, Z)))[0]
+            print 'Loading {}'.format(model)
+            data=np.genfromtxt(model)
+
+            for c, counter1 in enumerate(imfs_X1):
+                for d, counter2 in enumerate(imfs_X2):
+                
+                    #Interpolate templates onto a uniform wavelength grid and then log-rebin
+                    y=data[:, c*n_imfs+d+1][t_mask]   
+                    x=temp_lamdas[t_mask]
+                    
+                    #Make a new lamda array, carrying on the delta lamdas of high resolution bit
+                    new_x=temp_lamdas[t_mask][0]+0.9*(np.arange(np.ceil((temp_lamdas[t_mask][-1]-temp_lamdas[t_mask][0])/0.9))+1)
+
+                    interp=si.interp1d(x, y, fill_value='extrapolate')
+                    out=interp(new_x)
+
+                    #log rebin them
+                    sspNew, logLam_template, template_velscale = SF.log_rebin(templates_lam_range, out, velscale=velscale)                
+
+                    templates[:, b, a, c, d]=sspNew#/np.median(sspNew)
+
+    return templates, logLam_template
+
+################################################################################################################################################################
+
+
+################################################################################################################################################################
+def prepare_CvD_correction_interpolators(templates_lam_range, velscale, elements, verbose=True, element_imf='kroupa'):
+
+    all_corrections, logLam_template=prepare_CvD2_element_templates(templates_lam_range, velscale, elements, verbose=verbose, element_imf=element_imf)
+
+    general_templates, na_templates, positive_only_templates, T_templates=all_corrections
+
+    positive_only_elems, Na_elem, normal_elems=elements
+
+
+    #It's not clear if the last value here should be 13.5 or 13
+    ages=np.array([  1.,   3.,   5.,   9.,  13.0])
+    Zs=[-1.5, -1.0, -0.5, 0.0, 0.2]
+
+
+    elem_steps=[-0.45, -0.3, -0.2, -0.1, 0.0, 0.1, 0.2, 0.3, 0.45]
+    Na_elem_steps=[-0.45, -0.3, -0.2, -0.1, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+    positive_only_elem_steps=[0.0, 0.1, 0.2, 0.3, 0.45]
+    T_steps=[-50.0, -40.0, -30.0, -20.0, -10.0, 0.0, 10.0, 20.0, 30.0, 40.0, 50.0]
+    
+    na_interp=si.RegularGridInterpolator(((Na_elem_steps, ages, Zs, logLam_template)), na_templates, bounds_error=False, fill_value=None, method='linear')
+
+    T_interp=si.RegularGridInterpolator(((T_steps, ages, Zs, logLam_template)), T_templates, bounds_error=False, fill_value=None, method='linear')
+
+    #If we only have one positive element to check, we need to do something different- can't have a dimension with only one element in RegularGridInterpolator apparently.
+    if len(positive_only_elems)>1:
+        positive_only_interp=si.RegularGridInterpolator(((np.arange(len(positive_only_elems)), positive_only_elem_steps, ages, Zs, logLam_template)), positive_only_templates, bounds_error=False, fill_value=None, method='linear')
+    else:
+        positive_only_interp=si.RegularGridInterpolator((positive_only_elem_steps, ages, Zs, logLam_template), positive_only_templates[0, :], bounds_error=False, fill_value=None, method='linear')
+
+    if len(normal_elems)>1:
+        general_interp=si.RegularGridInterpolator(((np.arange(len(normal_elems)), elem_steps, ages, Zs, logLam_template)), general_templates, bounds_error=False, fill_value=None, method='linear')
+    else:
+        general_interp=si.RegularGridInterpolator((elem_steps, ages, Zs, logLam_template), general_templates[0, :], bounds_error=False, fill_value=None, method='linear')
+    
+
+    correction_interps=[general_interp, na_interp, positive_only_interp, T_interp]
+
+    return correction_interps, logLam_template
+
+##########
+
+
+
+
 def prepare_CvD2_element_templates(templates_lam_range, velscale, elements, verbose=True, element_imf='kroupa'):
 
     import glob
@@ -242,7 +379,7 @@ def prepare_CvD2_element_templates(templates_lam_range, velscale, elements, verb
     
     #template_glob=os.path.expanduser('~/z//Data/stellarpops/CvD2/vcj_models/VCJ_*.s100')
 
-    var_elem_spectra=CT.load_varelem_CvD16ssps(dirname=os.path.expanduser('~/z/Data/stellarpops/CvD2'), folder='atlas_rfn_v3', imf=element_imf)
+    var_elem_spectra=load_varelem_CvD16ssps(dirname=os.path.expanduser('~/z/Data/stellarpops/CvD2'), folder='atlas_rfn_v3', imf=element_imf)
 
     ages=var_elem_spectra['Solar'].age[:, 0]
     Zs=var_elem_spectra['Solar'].Z[0, :]

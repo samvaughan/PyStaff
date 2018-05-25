@@ -11,7 +11,7 @@ Welcome to Py-Staff's documentation!
    :caption: Contents:
 
    README <readme>
-
+   Example
 
 Indices and tables
 ==================
