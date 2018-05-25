@@ -19,6 +19,9 @@ The code has been used in Vaughan et. al 2018b, to measure the stellar populatio
 * Full sampling of the posterior with `emcee`
 * A simple example of use with MPI is given, to allow the code to be used on a cluster
 
+Using the code on a different set of SSP models would be possible but would require a fair amount of work. It's something I'd like to make easier in future!
+
+The code is being actively documented and updated. 
 
 ## Acknowledgements
 
