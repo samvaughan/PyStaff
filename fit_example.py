@@ -2,24 +2,21 @@
 
 ##############################################################################
 import numpy as np
-
 import emcee3
 import os
-import argparse
-
+import sys
 import scipy.interpolate as si 
 from astropy.io import fits
 from astropy.wcs import WCS
+import lmfit as LM
 
-import lmfit_SPV as LM
 import SpectralFitting
 import SpectralFitting_functs as SF
 
-#from emcee.utils import MPIPool
-#from schwimmbad import MPIPool
 
-
-#Likelihood function here: saves pickling the parameters dictionary
+#Likelihood function here. We could put it in the SpectraFitting class, but when 
+#working with MPI on a cluster that would mean we'd need to pickle the fit_settings
+#dictionary, which massively slows things down
 def lnprob(T, theta, var_names, bounds, ret_specs=False):
 
     #Log prob function. T is an array of values
@@ -37,10 +34,10 @@ def lnprob(T, theta, var_names, bounds, ret_specs=False):
         theta[name].value = val
 
     if ret_specs==False:
-        ll=SF.lnlike(theta, parameters)
+        ll=SF.lnlike(theta, fit.fit_settings)
         return ll
     else:
-        return SF.lnlike(theta, parameters, ret_specs=True)
+        return SF.lnlike(theta, fit.fit_settings, ret_specs=True)
 
 
 #Can select either Kroupa or Salpeter to use with the SSP models
@@ -109,8 +106,6 @@ FWHM_gal=2.5
 print 'Setting up the fit'
 fit=SpectralFitting.SpectralFit(lamdas, flux, errors, pixel_weights, fit_wavelengths, FWHM_gal, instrumental_resolution=instrumental_resolution, skyspecs=skyspecs, element_imf=element_imf)
 fit.set_up_fit()
-parameters=fit.fit_settings.copy()
-
 
 # # #Set up the parameters
 # with MPIPool() as pool:
