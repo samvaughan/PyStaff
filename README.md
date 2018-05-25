@@ -7,3 +7,19 @@ Py-Staff (Python Stellar Absorption Feature Fitting) is a python code to recover
 The code has been used in Vaughan et. al 2018b, to measure the stellar population of NGC 1399 using data from MUSE. 
 
 ![A fit to the central spectrum of NGC 1399](doc/Images/NGC1399_MUSE_central_fit.png)
+
+## Features: 
+
+* Recover the best fit recession velocity and velocity dispersion of the spectrum (with higher order moments to be added in the future)
+* Measure stellar population parameters such as Age, [Z/H] and the IMF, as well as abundances of the 18 elements varied within the models
+* Subtract a series of sky spectra during the fit
+* Carefully account for a varying instrumental resolution as a function of wavelength
+* Simultaneously fit a number of emisison lines with the stellar absorption features
+* Easily switch on or off which parameters to vary, thanks to the `lmfit` package
+* Full sampling of the posterior with `emcee`
+* A simple example of use with MPI is given, to allow the code to be used on a cluster
+
+
+## Acknowledgements
+
+A number of functions have been taken from Michele Cappellari's fantastic Penalized Pixel Fitting code (pPXF: available [here](http://www-astro.physics.ox.ac.uk/~mxc/software/)). I'd also like to thank Charlie Conroy for making available the latest version of the SSP models. 
