@@ -93,7 +93,34 @@ calcVEGAmag- as above but for the VEGA system; you must also supply a vega <em>s
 <dl class="function">
 <dt id="CvD_SSP_tools.load_varelem_CvD16ssps">
 <code class="descclassname">CvD_SSP_tools.</code><code class="descname">load_varelem_CvD16ssps</code><span class="sig-paren">(</span><em>dirname='/Data/stellarpops/CvD2'</em>, <em>folder='atlas_rfn_v3'</em>, <em>imf='kroupa'</em>, <em>verbose=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/CvD_SSP_tools.html#load_varelem_CvD16ssps"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#CvD_SSP_tools.load_varelem_CvD16ssps" title="Permalink to this definition">¶</a></dt>
-<dd><p>Load the CvD16 spectra with variable elemental abundances. They are returned in an array of shape (n_ages, n_Zs, n_pixels).</p>
+<dd><p>Load the CvD16 spectra (response functions) with variable elemental abundances.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>dirname</strong> (<em>string</em>) – Base location of the stellar models directory</li>
+<li><strong>folder</strong> (<em>string</em>) – The folder inside the base directory which contains the response functions</li>
+<li><strong>imf</strong> (<em>string</em>) – The IMF of the response functions. Choices are ‘kroupa’ or ‘salpeter’</li>
+<li><strong>verbose</strong> (<em>bool</em>) – Print information to the console</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A dictionary of spectra. See below for example</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(dict)</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Example</p>
+<p>The spectra are returned in a dictionary. The dictionary is indexed by a string referring to the name of the respone function,
+e.g. ‘Na+’. At each index, we have a Spectrum class which contains the response functions at various ages and metallicities</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">spectra</span><span class="o">=</span><span class="n">load_varelem_CvD16ssps</span><span class="p">(</span><span class="n">dirname</span><span class="o">=</span><span class="s1">&#39;/path/to/dir&#39;</span><span class="p">,</span> <span class="n">folder</span><span class="o">=</span><span class="s1">&#39;folder&#39;</span><span class="p">,</span> <span class="n">imf</span><span class="o">=</span><span class="s1">&#39;kroupa&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">spectra</span><span class="p">[</span><span class="s1">&#39;Na+&#39;</span><span class="p">]</span> <span class="c1">#Gives all RFs with [Na/H]=+0.3</span>
+</pre></div>
+</div>
 </dd></dl>
 
 <dl class="function">
@@ -104,17 +131,108 @@ calcVEGAmag- as above but for the VEGA system; you must also supply a vega <em>s
 <dl class="function">
 <dt id="CvD_SSP_tools.prepare_CvD2_templates_twopartIMF">
 <code class="descclassname">CvD_SSP_tools.</code><code class="descname">prepare_CvD2_templates_twopartIMF</code><span class="sig-paren">(</span><em>templates_lam_range</em>, <em>velscale</em>, <em>verbose=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/CvD_SSP_tools.html#prepare_CvD2_templates_twopartIMF"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#CvD_SSP_tools.prepare_CvD2_templates_twopartIMF" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Load the CvD16 base spectra, those that vary age, [Z/H] and the IMF. The templates are log-rebinned to have a uniform wavelength
+spacing in <strong>log</strong> wavelength, to ensure the difference in velocity between two adjacent pixels is the same, regardless of wavelength.</p>
+<p>They are returned in an array of shape (n_ages, n_Zs, n_pixels).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>templates_lam_range</strong> (<em>array-like</em>) – A 2 component vector with the start and stop wavelengths we want for the templates</li>
+<li><strong>velscale</strong> (<em>float</em>) – The velocity difference between two adjacent pixels in the log-rebinned spectrum. Use the same value for the templates as you <em>measure</em> from the spectrum!</li>
+<li><strong>verbose</strong> (<em>bool</em>) – Print information to the consolse</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><dl class="docutils">
+<dt>A two component tuple:</dt>
+<dd><ul class="first last simple">
+<li>templates (array): An array of templates with shape (N_wavelength, N_ages, N_metallicities, N_imf_x1, N_imf_x2)</li>
+<li>logLam_template (array): The log-rebinned wavelength array of the templates</li>
+</ul>
+</dd>
+</dl>
+</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(tuple)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
 
 <dl class="function">
 <dt id="CvD_SSP_tools.prepare_CvD_correction_interpolators">
 <code class="descclassname">CvD_SSP_tools.</code><code class="descname">prepare_CvD_correction_interpolators</code><span class="sig-paren">(</span><em>templates_lam_range</em>, <em>velscale</em>, <em>elements</em>, <em>verbose=True</em>, <em>element_imf='kroupa'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/CvD_SSP_tools.html#prepare_CvD_correction_interpolators"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#CvD_SSP_tools.prepare_CvD_correction_interpolators" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Set up the interpolator for the response functions using the log-rebinned templates we get from <cite>prepare_CvD2_element_templates</cite>.
+The response functions allow for variation in a general set of elements (Fe, Ca, Mg, etc), a set of elements which can only be
+positive (Mn, K, V, etc), and Sodium, which can be extended from -0.3 dex to +1.0 dex. We have to treat each of these cases
+separately, so we end up with three different interpolation objects. You can also vary the effective temperature of the isochrone,
+but this is now deprecated in V2.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>templates_lam_range</strong> (<em>array-like</em>) – A 2 component vector with the start and stop wavelengths we want for the templates</li>
+<li><strong>velscale</strong> (<em>float</em>) – The velocity difference between two adjacent pixels in the log-rebinned spectrum. Use the same value for the templates as you <em>measure</em> from the spectrum!</li>
+<li><strong>elements</strong> (<em>array</em>) – This is an array of integers corresponding to the elements we want to vary in the interpolators. The numbers come from the headings in the SSP RF file. Na is element 1, Ca is element 2, etc. TODO: Improve this! Make it clearer</li>
+<li><strong>verbose</strong> (<em>bool</em>) – Print information to the consolse</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><dl class="docutils">
+<dt>A two component tuple containing:</dt>
+<dd><ul class="first last simple">
+<li>correction_interps: A tuple of the interpolators. The order is [general_interp, na_interp, positive_only_interp, T_interp). TODO explain this more</li>
+<li>logLam_template: The log-rebinned wavelength array of the templates</li>
+</ul>
+</dd>
+</dl>
+</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(tuple)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
 
 <dl class="function">
 <dt id="CvD_SSP_tools.prepare_CvD_interpolator_twopartIMF">
 <code class="descclassname">CvD_SSP_tools.</code><code class="descname">prepare_CvD_interpolator_twopartIMF</code><span class="sig-paren">(</span><em>templates_lam_range</em>, <em>velscale</em>, <em>verbose=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/CvD_SSP_tools.html#prepare_CvD_interpolator_twopartIMF"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#CvD_SSP_tools.prepare_CvD_interpolator_twopartIMF" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Set up the interpolator for the base SSP spectra using the log-rebinned templates we get from <cite>prepare_CvD2_templates_twopartIMF</cite>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>templates_lam_range</strong> (<em>array-like</em>) – A 2 component vector with the start and stop wavelengths we want for the templates</li>
+<li><strong>velscale</strong> (<em>float</em>) – The velocity difference between two adjacent pixels in the log-rebinned spectrum. Use the same value for the templates as you <em>measure</em> from the spectrum!</li>
+<li><strong>verbose</strong> (<em>bool</em>) – Print information to the consolse</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><dl class="docutils">
+<dt>A two component tuple containing:</dt>
+<dd><ul class="first last simple">
+<li>interp: the interpolate object. Axes are wavelength, age, Z, imf_x1 and imf_x2</li>
+<li>logLam_template: the log-rebinned wavelength array of the templates</li>
+</ul>
+</dd>
+</dl>
+</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">(tuple)</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
 
 <dl class="function">
 <dt id="CvD_SSP_tools.singleOrList2Array">

@@ -215,7 +215,22 @@
 <div class="viewcode-block" id="load_varelem_CvD16ssps"><a class="viewcode-back" href="../source/CvD_SSP_tools.html#CvD_SSP_tools.load_varelem_CvD16ssps">[docs]</a><span class="k">def</span> <span class="nf">load_varelem_CvD16ssps</span><span class="p">(</span><span class="n">dirname</span><span class="o">=</span><span class="s1">&#39;/Data/stellarpops/CvD2&#39;</span><span class="p">,</span> <span class="n">folder</span><span class="o">=</span><span class="s1">&#39;atlas_rfn_v3&#39;</span><span class="p">,</span> <span class="n">imf</span><span class="o">=</span><span class="s1">&#39;kroupa&#39;</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
 
     <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">    Load the CvD16 spectra with variable elemental abundances. They are returned in an array of shape (n_ages, n_Zs, n_pixels).</span>
+<span class="sd">    Load the CvD16 spectra (response functions) with variable elemental abundances. </span>
+
+<span class="sd">    Arguments: </span>
+<span class="sd">        dirname (string): Base location of the stellar models directory</span>
+<span class="sd">        folder (string): The folder inside the base directory which contains the response functions</span>
+<span class="sd">        imf (string): The IMF of the response functions. Choices are &#39;kroupa&#39; or &#39;salpeter&#39;</span>
+<span class="sd">        verbose (bool): Print information to the console</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        (dict): A dictionary of spectra. See below for example</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        The spectra are returned in a dictionary. The dictionary is indexed by a string referring to the name of the respone function, </span>
+<span class="sd">        e.g. &#39;Na+&#39;. At each index, we have a Spectrum class which contains the response functions at various ages and metallicities</span>
+
+<span class="sd">        &gt;&gt;&gt; spectra=load_varelem_CvD16ssps(dirname=&#39;/path/to/dir&#39;, folder=&#39;folder&#39;, imf=&#39;kroupa&#39;)</span>
+<span class="sd">        &gt;&gt;&gt; spectra[&#39;Na+&#39;] #Gives all RFs with [Na/H]=+0.3</span>
 
 <span class="sd">    &#39;&#39;&#39;</span>
 
@@ -285,7 +300,19 @@
 
 <span class="c1">################################################################################################################################################################</span>
 <div class="viewcode-block" id="prepare_CvD_interpolator_twopartIMF"><a class="viewcode-back" href="../source/CvD_SSP_tools.html#CvD_SSP_tools.prepare_CvD_interpolator_twopartIMF">[docs]</a><span class="k">def</span> <span class="nf">prepare_CvD_interpolator_twopartIMF</span><span class="p">(</span><span class="n">templates_lam_range</span><span class="p">,</span> <span class="n">velscale</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Set up the interpolator for the base SSP spectra using the log-rebinned templates we get from `prepare_CvD2_templates_twopartIMF`.</span>
 
+<span class="sd">    Arguments:</span>
+<span class="sd">        templates_lam_range (array-like): A 2 component vector with the start and stop wavelengths we want for the templates</span>
+<span class="sd">        velscale (float): The velocity difference between two adjacent pixels in the log-rebinned spectrum. Use the same value for the templates as you *measure* from the spectrum!</span>
+<span class="sd">        verbose (bool): Print information to the consolse</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        (tuple): A two component tuple containing:</span>
+<span class="sd">            * interp: the interpolate object. Axes are wavelength, age, Z, imf_x1 and imf_x2</span>
+<span class="sd">            * logLam_template: the log-rebinned wavelength array of the templates</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">templates</span><span class="p">,</span> <span class="n">logLam_template</span><span class="o">=</span><span class="n">prepare_CvD2_templates_twopartIMF</span><span class="p">(</span><span class="n">templates_lam_range</span><span class="p">,</span> <span class="n">velscale</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span>
 
     <span class="n">nimfs</span><span class="o">=</span><span class="mi">16</span>
@@ -303,6 +330,24 @@
 <span class="c1">################################################################################################################################################################</span>
 
 <div class="viewcode-block" id="prepare_CvD2_templates_twopartIMF"><a class="viewcode-back" href="../source/CvD_SSP_tools.html#CvD_SSP_tools.prepare_CvD2_templates_twopartIMF">[docs]</a><span class="k">def</span> <span class="nf">prepare_CvD2_templates_twopartIMF</span><span class="p">(</span><span class="n">templates_lam_range</span><span class="p">,</span> <span class="n">velscale</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Load the CvD16 base spectra, those that vary age, [Z/H] and the IMF. The templates are log-rebinned to have a uniform wavelength</span>
+<span class="sd">    spacing in **log** wavelength, to ensure the difference in velocity between two adjacent pixels is the same, regardless of wavelength. </span>
+
+<span class="sd">    They are returned in an array of shape (n_ages, n_Zs, n_pixels).</span>
+
+<span class="sd">    Arguments: </span>
+<span class="sd">        templates_lam_range (array-like): A 2 component vector with the start and stop wavelengths we want for the templates</span>
+<span class="sd">        velscale (float): The velocity difference between two adjacent pixels in the log-rebinned spectrum. Use the same value for the templates as you *measure* from the spectrum!</span>
+<span class="sd">        verbose (bool): Print information to the consolse</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        (tuple): A two component tuple:</span>
+<span class="sd">            * templates (array): An array of templates with shape (N_wavelength, N_ages, N_metallicities, N_imf_x1, N_imf_x2)</span>
+<span class="sd">            * logLam_template (array): The log-rebinned wavelength array of the templates</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+
     <span class="kn">import</span> <span class="nn">glob</span>
     <span class="kn">import</span> <span class="nn">os</span>
     <span class="n">template_glob</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="s1">&#39;~/z/Data/stellarpops/CvD2/vcj_twopartimf/vcj_ssp_v8/VCJ_v8_mcut0.08_t*&#39;</span><span class="p">)</span>
@@ -372,6 +417,25 @@
 <span class="c1">################################################################################################################################################################</span>
 <div class="viewcode-block" id="prepare_CvD_correction_interpolators"><a class="viewcode-back" href="../source/CvD_SSP_tools.html#CvD_SSP_tools.prepare_CvD_correction_interpolators">[docs]</a><span class="k">def</span> <span class="nf">prepare_CvD_correction_interpolators</span><span class="p">(</span><span class="n">templates_lam_range</span><span class="p">,</span> <span class="n">velscale</span><span class="p">,</span> <span class="n">elements</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">element_imf</span><span class="o">=</span><span class="s1">&#39;kroupa&#39;</span><span class="p">):</span>
 
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Set up the interpolator for the response functions using the log-rebinned templates we get from `prepare_CvD2_element_templates`.</span>
+<span class="sd">    The response functions allow for variation in a general set of elements (Fe, Ca, Mg, etc), a set of elements which can only be </span>
+<span class="sd">    positive (Mn, K, V, etc), and Sodium, which can be extended from -0.3 dex to +1.0 dex. We have to treat each of these cases </span>
+<span class="sd">    separately, so we end up with three different interpolation objects. You can also vary the effective temperature of the isochrone, </span>
+<span class="sd">    but this is now deprecated in V2. </span>
+
+<span class="sd">    Arguments:</span>
+<span class="sd">        templates_lam_range (array-like): A 2 component vector with the start and stop wavelengths we want for the templates</span>
+<span class="sd">        velscale (float): The velocity difference between two adjacent pixels in the log-rebinned spectrum. Use the same value for the templates as you *measure* from the spectrum!</span>
+<span class="sd">        elements (array): This is an array of integers corresponding to the elements we want to vary in the interpolators. The numbers come from the headings in the SSP RF file. Na is element 1, Ca is element 2, etc. TODO: Improve this! Make it clearer</span>
+<span class="sd">        verbose (bool): Print information to the consolse</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        (tuple): A two component tuple containing:</span>
+<span class="sd">            * correction_interps: A tuple of the interpolators. The order is [general_interp, na_interp, positive_only_interp, T_interp). TODO explain this more</span>
+<span class="sd">            * logLam_template: The log-rebinned wavelength array of the templates</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="n">all_corrections</span><span class="p">,</span> <span class="n">logLam_template</span><span class="o">=</span><span class="n">prepare_CvD2_element_templates</span><span class="p">(</span><span class="n">templates_lam_range</span><span class="p">,</span> <span class="n">velscale</span><span class="p">,</span> <span class="n">elements</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span> <span class="n">element_imf</span><span class="o">=</span><span class="n">element_imf</span><span class="p">)</span>
 
     <span class="n">general_templates</span><span class="p">,</span> <span class="n">na_templates</span><span class="p">,</span> <span class="n">positive_only_templates</span><span class="p">,</span> <span class="n">T_templates</span><span class="o">=</span><span class="n">all_corrections</span>
@@ -415,6 +479,8 @@
 
 
 <div class="viewcode-block" id="prepare_CvD2_element_templates"><a class="viewcode-back" href="../source/CvD_SSP_tools.html#CvD_SSP_tools.prepare_CvD2_element_templates">[docs]</a><span class="k">def</span> <span class="nf">prepare_CvD2_element_templates</span><span class="p">(</span><span class="n">templates_lam_range</span><span class="p">,</span> <span class="n">velscale</span><span class="p">,</span> <span class="n">elements</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">element_imf</span><span class="o">=</span><span class="s1">&#39;kroupa&#39;</span><span class="p">):</span>
+
+
 
     <span class="kn">import</span> <span class="nn">glob</span>
     <span class="kn">import</span> <span class="nn">os</span>
