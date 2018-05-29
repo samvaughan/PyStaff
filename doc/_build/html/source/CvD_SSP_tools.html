@@ -1,0 +1,170 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>CvD_SSP_tools module &#8212; Py-Staff 1.0 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-CvD_SSP_tools">
+<span id="cvd-ssp-tools-module"></span><h1>CvD_SSP_tools module<a class="headerlink" href="#module-CvD_SSP_tools" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="CvD_SSP_tools.Spectrum">
+<em class="property">class </em><code class="descclassname">CvD_SSP_tools.</code><code class="descname">Spectrum</code><span class="sig-paren">(</span><em>lam=None</em>, <em>lamspec=None</em>, <em>errlamspec=None</em>, <em>age=None</em>, <em>Z=None</em>, <em>wavesyst=None</em>, <em>userdict=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/CvD_SSP_tools.html#Spectrum"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#CvD_SSP_tools.Spectrum" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<p>UPDATE THE DOCSTRING! A stripped down version of specTools in order to package this all together nicely
+Author: Ryan Houghton (20/4/11)</p>
+<dl class="docutils">
+<dt>Purpose: A spectrum object to aid manipulation of wavelength/frequency and the associated</dt>
+<dd>flux values</dd>
+</dl>
+<p>Inputs:
+This class MUST be initalised with EITHER</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>lamspec - a NLAMxNSPEC numpy array with [:,0] being the wavelength array (AA) and [:,1:] being</dt>
+<dd>the associated flux values (erg/s/cm**2/AA)</dd>
+<dt>muspec  - a NLAMxNSPEC numpy array with [:,0] being the frequency array (GHz) and [:,1:] being</dt>
+<dd>the associated flux values (GJy = 1e-14 erg/s/cm**2/Hz)</dd>
+</dl>
+</div></blockquote>
+<p>NOTE: 2xN seems a funny way to order the indicies but in numpy, this IS the efficient
+way to order the memory elements</p>
+<p>Definitions:
+Once you have initalised the class with either lamspec or muspec, you will find available
+the following variables (no matter if you initalised with lamspec or muspec):</p>
+<blockquote>
+<div>lam  - the wavelength array (AA)
+flam - the associated flux (erg/s/cm**2/AA)
+mu   - the frequency array (GHz)
+fmu  - the associated flux (GJy = 1e-14 erg/s/cm**2/Hz)</div></blockquote>
+<dl class="docutils">
+<dt>Functions:</dt>
+<dd>calcABmag  - given a filter (spectrum class), return a magnitude on the AB system
+calcSTmag  - as above but for the ST system
+calcVEGAmag- as above but for the VEGA system; you must also supply a vega <em>spectrum</em></dd>
+</dl>
+<p class="rubric">Notes</p>
+<ul class="simple">
+<li>You can define more than one flam/fmu for each lam/mu</li>
+<li>Filters used in the functions should also be <em>spectrum</em> classes</li>
+<li>Filters don’t need to be sorted in mu or lam</li>
+</ul>
+</dd></dl>
+
+<dl class="function">
+<dt id="CvD_SSP_tools.checkDims">
+<code class="descclassname">CvD_SSP_tools.</code><code class="descname">checkDims</code><span class="sig-paren">(</span><em>var</em>, <em>varname</em>, <em>parentShape</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/CvD_SSP_tools.html#checkDims"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#CvD_SSP_tools.checkDims" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="CvD_SSP_tools.load_varelem_CvD16ssps">
+<code class="descclassname">CvD_SSP_tools.</code><code class="descname">load_varelem_CvD16ssps</code><span class="sig-paren">(</span><em>dirname='/Data/stellarpops/CvD2'</em>, <em>folder='atlas_rfn_v3'</em>, <em>imf='kroupa'</em>, <em>verbose=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/CvD_SSP_tools.html#load_varelem_CvD16ssps"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#CvD_SSP_tools.load_varelem_CvD16ssps" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load the CvD16 spectra with variable elemental abundances. They are returned in an array of shape (n_ages, n_Zs, n_pixels).</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="CvD_SSP_tools.prepare_CvD2_element_templates">
+<code class="descclassname">CvD_SSP_tools.</code><code class="descname">prepare_CvD2_element_templates</code><span class="sig-paren">(</span><em>templates_lam_range</em>, <em>velscale</em>, <em>elements</em>, <em>verbose=True</em>, <em>element_imf='kroupa'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/CvD_SSP_tools.html#prepare_CvD2_element_templates"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#CvD_SSP_tools.prepare_CvD2_element_templates" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="CvD_SSP_tools.prepare_CvD2_templates_twopartIMF">
+<code class="descclassname">CvD_SSP_tools.</code><code class="descname">prepare_CvD2_templates_twopartIMF</code><span class="sig-paren">(</span><em>templates_lam_range</em>, <em>velscale</em>, <em>verbose=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/CvD_SSP_tools.html#prepare_CvD2_templates_twopartIMF"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#CvD_SSP_tools.prepare_CvD2_templates_twopartIMF" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="CvD_SSP_tools.prepare_CvD_correction_interpolators">
+<code class="descclassname">CvD_SSP_tools.</code><code class="descname">prepare_CvD_correction_interpolators</code><span class="sig-paren">(</span><em>templates_lam_range</em>, <em>velscale</em>, <em>elements</em>, <em>verbose=True</em>, <em>element_imf='kroupa'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/CvD_SSP_tools.html#prepare_CvD_correction_interpolators"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#CvD_SSP_tools.prepare_CvD_correction_interpolators" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="CvD_SSP_tools.prepare_CvD_interpolator_twopartIMF">
+<code class="descclassname">CvD_SSP_tools.</code><code class="descname">prepare_CvD_interpolator_twopartIMF</code><span class="sig-paren">(</span><em>templates_lam_range</em>, <em>velscale</em>, <em>verbose=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/CvD_SSP_tools.html#prepare_CvD_interpolator_twopartIMF"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#CvD_SSP_tools.prepare_CvD_interpolator_twopartIMF" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="CvD_SSP_tools.singleOrList2Array">
+<code class="descclassname">CvD_SSP_tools.</code><code class="descname">singleOrList2Array</code><span class="sig-paren">(</span><em>invar</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/CvD_SSP_tools.html#singleOrList2Array"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#CvD_SSP_tools.singleOrList2Array" title="Permalink to this definition">¶</a></dt>
+<dd><p>If a single value, leave. If a list, convert to array. If array, leave as array.
+But for size-1 arrays/lits, convert back to scalar.</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Sam Vaughan.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="../_sources/source/CvD_SSP_tools.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

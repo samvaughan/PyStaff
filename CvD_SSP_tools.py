@@ -173,7 +173,22 @@ def singleOrList2Array(invar):
 def load_varelem_CvD16ssps(dirname='/Data/stellarpops/CvD2', folder='atlas_rfn_v3', imf='kroupa', verbose=True):
 
     '''
-    Load the CvD16 spectra with variable elemental abundances. They are returned in an array of shape (n_ages, n_Zs, n_pixels).
+    Load the CvD16 spectra (response functions) with variable elemental abundances. 
+
+    Arguments: 
+        dirname (string): Base location of the stellar models directory
+        folder (string): The folder inside the base directory which contains the response functions
+        imf (string): The IMF of the response functions. Choices are 'kroupa' or 'salpeter'
+        verbose (bool): Print information to the console
+    Returns:
+        (dict): A dictionary of spectra. See below for example
+
+    Example:
+        The spectra are returned in a dictionary. The dictionary is indexed by a string referring to the name of the respone function, 
+        e.g. 'Na+'. At each index, we have a Spectrum class which contains the response functions at various ages and metallicities
+
+        >>> spectra=load_varelem_CvD16ssps(dirname='/path/to/dir', folder='folder', imf='kroupa')
+        >>> spectra['Na+'] #Gives all RFs with [Na/H]=+0.3
 
     '''
 
@@ -243,7 +258,20 @@ def load_varelem_CvD16ssps(dirname='/Data/stellarpops/CvD2', folder='atlas_rfn_v
 
 ################################################################################################################################################################
 def prepare_CvD_interpolator_twopartIMF(templates_lam_range, velscale, verbose=True):
+    """
+    Set up the interpolator for the base SSP spectra using the log-rebinned templates we get from `prepare_CvD2_templates_twopartIMF`.
 
+    Arguments:
+        templates_lam_range (array-like): A 2 component vector with the start and stop wavelengths we want for the templates
+        velscale (float): The velocity difference between two adjacent pixels in the log-rebinned spectrum. Use the same value
+        for the templates as you *measure* from the spectrum!
+        verbose (bool): Print information to the consolse
+
+    Returns:
+        (tuple): A two component tuple containing:
+            * interp: the interpolate object. Axes are wavelength, age, Z, imf_x1 and imf_x2
+            * logLam_template: the log-rebinned wavelength array of the templates
+    """
     templates, logLam_template=prepare_CvD2_templates_twopartIMF(templates_lam_range, velscale, verbose=verbose)
 
     nimfs=16
@@ -261,6 +289,29 @@ def prepare_CvD_interpolator_twopartIMF(templates_lam_range, velscale, verbose=T
 ################################################################################################################################################################
 
 def prepare_CvD2_templates_twopartIMF(templates_lam_range, velscale, verbose=True):
+
+    '''
+    Load the CvD16 base spectra, those that vary age, [Z/H] and the IMF. The templates are log-rebinned to have a uniform wavelength
+    spacing in **log** wavelength, to ensure the difference in velocity between two adjacent pixels is the same, regardless of wavelength. 
+
+    They are returned in an array of shape (n_ages, n_Zs, n_pixels).
+
+    Arguments: 
+        templates_lam_range (array-like): A 2 component vector with the start and stop wavelengths we want for the templates
+        velscale (float): The velocity difference between two adjacent pixels in the log-rebinned spectrum. Use the same value
+        for the templates as you *measure* from the spectrum!
+        verbose (bool): Print information to the consolse
+    Returns:
+        (tuple): A two component tuple:
+            * templates (array): An array of templates with shape (N_wavelength, N_ages, N_metallicities, N_imf_x1, N_imf_x2)
+            * logLam_template (array): The log-rebinned wavelength array of the templates
+
+    Example:
+
+
+    '''
+
+
     import glob
     import os
     template_glob=os.path.expanduser('~/z/Data/stellarpops/CvD2/vcj_twopartimf/vcj_ssp_v8/VCJ_v8_mcut0.08_t*')
@@ -330,6 +381,28 @@ def prepare_CvD2_templates_twopartIMF(templates_lam_range, velscale, verbose=Tru
 ################################################################################################################################################################
 def prepare_CvD_correction_interpolators(templates_lam_range, velscale, elements, verbose=True, element_imf='kroupa'):
 
+    """
+    Set up the interpolator for the response functions using the log-rebinned templates we get from `prepare_CvD2_element_templates`.
+    The response functions allow for variation in a general set of elements (Fe, Ca, Mg, etc), a set of elements which can only be 
+    positive (Mn, K, V, etc), and Sodium, which can be extended from -0.3 dex to +1.0 dex. We have to treat each of these cases 
+    separately, so we end up with three different interpolation objects. You can also vary the effective temperature of the isochrone, 
+    but this is now deprecated in V2. 
+
+    Arguments:
+        templates_lam_range (array-like): A 2 component vector with the start and stop wavelengths we want for the templates
+        velscale (float): The velocity difference between two adjacent pixels in the log-rebinned spectrum. Use the same value
+        for the templates as you *measure* from the spectrum!
+        elements (array): This is an array of integers corresponding to the elements we want to vary in the interpolators. The
+        numbers come from the headings in the SSP RF file. Na is element 1, Ca is element 2, etc. TODO: Improve this! Make it clearer
+
+        verbose (bool): Print information to the consolse
+
+    Returns:
+        (tuple): A two component tuple containing:
+            * correction_interps: A tuple of the interpolators. The order is [general_interp, na_interp, positive_only_interp, T_interp). TODO explain this more
+            * logLam_template: The log-rebinned wavelength array of the templates
+    """
+
     all_corrections, logLam_template=prepare_CvD2_element_templates(templates_lam_range, velscale, elements, verbose=verbose, element_imf=element_imf)
 
     general_templates, na_templates, positive_only_templates, T_templates=all_corrections
@@ -373,6 +446,8 @@ def prepare_CvD_correction_interpolators(templates_lam_range, velscale, elements
 
 
 def prepare_CvD2_element_templates(templates_lam_range, velscale, elements, verbose=True, element_imf='kroupa'):
+
+    
 
     import glob
     import os
