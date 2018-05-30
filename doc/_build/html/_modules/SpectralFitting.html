@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>SpectralFitting &mdash; Py-Staff 1.0 documentation</title>
+  <title>SpectralFitting &mdash; PyStaff 1.0 documentation</title>
   
 
   
@@ -47,7 +47,7 @@
           
 
           
-            <a href="../index.html" class="icon icon-home"> Py-Staff
+            <a href="../index.html" class="icon icon-home"> PyStaff
           
 
           
@@ -99,7 +99,7 @@
       <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="../index.html">Py-Staff</a>
+          <a href="../index.html">PyStaff</a>
         
       </nav>
 
@@ -153,8 +153,13 @@
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span> 
 <span class="kn">import</span> <span class="nn">scipy.constants</span> <span class="k">as</span> <span class="nn">const</span>
-<span class="kn">import</span> <span class="nn">SpectralFitting_functs</span> <span class="k">as</span> <span class="nn">SF</span>
-<span class="kn">import</span> <span class="nn">CvD_SSP_tools</span> <span class="k">as</span> <span class="nn">CvDTools</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">SpectralFitting_functs</span> <span class="k">as</span> <span class="n">SF</span>
+    <span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">CvD_SSP_tools</span> <span class="k">as</span> <span class="n">CvDTools</span>
+
+<span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">SpectralFitting_functs</span> <span class="k">as</span> <span class="nn">SF</span>
+    <span class="kn">import</span> <span class="nn">CvD_SSP_tools</span> <span class="k">as</span> <span class="nn">CvDTools</span>
 
 
 <span class="c1">#ToDo:</span>

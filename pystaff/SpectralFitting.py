@@ -3,8 +3,15 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import numpy as np 
 import scipy.constants as const
-from . import SpectralFitting_functs as SF
-from . import CvD_SSP_tools as CvDTools
+
+#Relative imports are such a headache
+try:
+    from . import SpectralFitting_functs as SF
+    from . import CvD_SSP_tools as CvDTools
+#autodoc doesn't like the above imports, so add this to make the documentation work
+except ValueError:
+    import SpectralFitting_functs as SF
+    import CvD_SSP_tools as CvDTools
 
 
 #ToDo:

@@ -19,7 +19,7 @@
 import os
 import sys
 sys.path.insert(0, os.path.abspath('../pystaff'))
-
+sys.path.insert(0, os.path.abspath('../pystaff/'))
 
 # -- General configuration ------------------------------------------------
 
@@ -56,7 +56,7 @@ source_suffix = ['.rst', '.md']
 master_doc = 'index'
 
 # General information about the project.
-project = u'Py-Staff'
+project = u'PyStaff'
 copyright = u'2018, Sam Vaughan'
 author = u'Sam Vaughan'
 

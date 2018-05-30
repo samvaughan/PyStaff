@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Quick Introduction &mdash; Py-Staff 1.0 documentation</title>
+  <title>Quick Introduction &mdash; PyStaff 1.0 documentation</title>
   
 
   
@@ -49,7 +49,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home"> Py-Staff
+            <a href="index.html" class="icon icon-home"> PyStaff
           
 
           
@@ -86,7 +86,7 @@
               <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Quick Introduction</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#py-staff-stellar-absorption-feature-fitting-in-python">Py-Staff: Stellar Absorption Feature Fitting in python</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#pystaff-stellar-absorption-feature-fitting-in-python">PyStaff: Stellar Absorption Feature Fitting in python</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#features">Features:</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#acknowledgements">Acknowledgements</a></li>
 </ul>
@@ -108,7 +108,7 @@
       <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">Py-Staff</a>
+          <a href="index.html">PyStaff</a>
         
       </nav>
 
@@ -160,11 +160,13 @@
             
   <div class="section" id="quick-introduction">
 <h1>Quick Introduction<a class="headerlink" href="#quick-introduction" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="py-staff-stellar-absorption-feature-fitting-in-python">
-<h2>Py-Staff: Stellar Absorption Feature Fitting in python<a class="headerlink" href="#py-staff-stellar-absorption-feature-fitting-in-python" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="pystaff-stellar-absorption-feature-fitting-in-python">
+<h2>PyStaff: Stellar Absorption Feature Fitting in python<a class="headerlink" href="#pystaff-stellar-absorption-feature-fitting-in-python" title="Permalink to this headline">¶</a></h2>
 <a class="reference external image-reference" href="https://travis-ci.com/samvaughan/PySpecFit"><img alt="Build Status" src="https://travis-ci.com/samvaughan/PySpecFit.svg?branch=master" /></a>
-<p>Py-Staff (Python Stellar Absorption Feature Fitting) is a python code to recover stellar population parameters (such as Stellar Age, Metallicity and the Initial Mass Function) from visible and near-IR spectra of nearby galaxies. It’s built to work with the newest version of the single stellar population models of Conroy, Villame, van Dokkum &amp; Lind (described <a class="reference external" href="https://ui.adsabs.harvard.edu/#abs/2018ApJ...854..139C/abstract">here</a>) which are available on request from Charlie Conroy’s <a class="reference external" href="https://scholar.harvard.edu/cconroy/sps-models">website</a>.</p>
+<a class="reference external image-reference" href="https://pystaff.readthedocs.io/en/latest/?badge=latest"><img alt="Documentation Status" src="https://readthedocs.org/projects/pystaff/badge/?version=latest" /></a>
+<p>PyStaff (Python Stellar Absorption Feature Fitting) is a python code to recover stellar population parameters (such as Stellar Age, Metallicity and the Initial Mass Function) from visible and near-IR spectra of nearby galaxies. It’s built to work with the newest version of the single stellar population models of Conroy, Villame, van Dokkum &amp; Lind (described <a class="reference external" href="https://ui.adsabs.harvard.edu/#abs/2018ApJ...854..139C/abstract">here</a>) which are available on request from Charlie Conroy’s <a class="reference external" href="https://scholar.harvard.edu/cconroy/sps-models">website</a>.</p>
 <p>The code has been used in Vaughan et. al 2018b, to measure the stellar population of NGC 1399 using data from MUSE.</p>
+<p>You can read the docs at <a class="reference external" href="http://pystaff.readthedocs.io/en/latest/index.html">pystaff.readthedocs.io</a></p>
 <a class="reference external image-reference" href="_images/NGC1399_MUSE_central_fit.png"><img alt="A fit to the central spectrum of NGC 1399" src="_images/NGC1399_MUSE_central_fit.png" /></a>
 <div class="section" id="features">
 <h3>Features:<a class="headerlink" href="#features" title="Permalink to this headline">¶</a></h3>
@@ -173,7 +175,7 @@
 <li>Measure stellar population parameters such as Age, [Z/H] and the IMF, as well as abundances of the 18 elements varied within the models</li>
 <li>Subtract a series of sky spectra during the fit, to deal with over/under subtracted night sky emission lines</li>
 <li>Carefully account for a varying instrumental resolution as a function of wavelength</li>
-<li>Simultaneously fit a number of emisison lines with the stellar absorption features</li>
+<li>Simultaneously fit a number of emission lines with the stellar absorption features</li>
 <li>Easily switch on or off which parameters to vary, thanks to the <code class="docutils literal"><span class="pre">lmfit</span></code> package</li>
 <li>Full sampling of the posterior with <code class="docutils literal"><span class="pre">emcee</span></code></li>
 <li>A simple example of use with an MPI pool is given, to allow the code to be used on a cluster</li>
