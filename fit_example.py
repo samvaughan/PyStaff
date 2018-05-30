@@ -73,7 +73,7 @@ instrumental_resolution=None
 # ######################################################
 
 
-
+# ######################################################
 # Mask out regions that we don't want to fit, e.g. around telluric residuals, particularly nasty skylines, etc
 # THESE SHOULD BE OBSERVED WAVELENGTHS
 telluric_lam_1=np.array([[6862, 6952]])
@@ -83,7 +83,7 @@ skylines=np.array([[8819, 8834], [8878.0, 8893], [8911, 8925], [8948, 8961]])
 masked_wavelengths=np.vstack([telluric_lam_1, telluric_lam_2, skylines]).reshape(-1, 1, 2)
 string_masked_wavelengths=["{} to {}".format(pair[0][0], pair[0][1]) for pair in masked_wavelengths]
 
-#Mask pixels we don't want
+#Make a mask of pixels we don't want
 pixel_mask=np.ones_like(flux, dtype=bool)
 for array in masked_wavelengths:   
     m=SF.make_mask(lamdas, array)
@@ -106,13 +106,6 @@ FWHM_gal=2.5
 print 'Setting up the fit'
 fit=SpectralFit(lamdas, flux, errors, pixel_weights, fit_wavelengths, FWHM_gal, instrumental_resolution=instrumental_resolution, skyspecs=skyspecs, element_imf=element_imf)
 fit.set_up_fit()
-
-# # #Set up the parameters
-# with MPIPool() as pool:
-#     if not pool.is_master():
-#         pool.wait()
-#         sys.exit(0)
-
 
 
 #Here are the available fit parameters
@@ -248,11 +241,11 @@ p0=p0.T
 nwalkers=200
 nsteps=30000
 
-# fname='attempt1_centre.h5'
-# backend=emcee3.backends.HDFBackend(fname)
+fname='attempt1_centre.h5'
+backend=emcee3.backends.HDFBackend(fname)
 
-# sampler = emcee3.EnsembleSampler(nwalkers, ndim, lnprob, args=[theta, variables, bounds], backend=backend, pool=None)
-# result = sampler.run_mcmc(p0, nsteps, progress=True)
+sampler = emcee3.EnsembleSampler(nwalkers, ndim, lnprob, args=[theta, variables, bounds], backend=backend, pool=None)
+result = sampler.run_mcmc(p0, nsteps, progress=True)
 
 
 ###################################################################################################

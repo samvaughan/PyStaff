@@ -1,7 +1,0 @@
-test\_SpecSpectralFitting module
-================================
-
-.. automodule:: test_SpecSpectralFitting
-    :members:
-    :undoc-members:
-    :show-inheritance:

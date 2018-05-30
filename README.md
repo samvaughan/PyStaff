@@ -6,7 +6,7 @@ Py-Staff (Python Stellar Absorption Feature Fitting) is a python code to recover
 
 The code has been used in Vaughan et. al 2018b, to measure the stellar population of NGC 1399 using data from MUSE. 
 
-![A fit to the central spectrum of NGC 1399](doc/Images/NGC1399_MUSE_central_fit.png)
+![A fit to the central spectrum of NGC 1399](_images/NGC1399_MUSE_central_fit.png)
 
 ## Features: 
 

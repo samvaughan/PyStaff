@@ -1,7 +1,0 @@
-fit\_IC1459 module
-==================
-
-.. automodule:: fit_IC1459
-    :members:
-    :undoc-members:
-    :show-inheritance:
