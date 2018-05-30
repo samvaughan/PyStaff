@@ -3,8 +3,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import numpy as np 
 import scipy.constants as const
-import SpectralFitting_functs as SF
-import CvD_SSP_tools as CvDTools
+from . import SpectralFitting_functs as SF
+from . import CvD_SSP_tools as CvDTools
 
 
 #ToDo:

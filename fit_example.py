@@ -10,8 +10,8 @@ from astropy.io import fits
 from astropy.wcs import WCS
 import lmfit as LM
 
-import SpectralFitting
-import SpectralFitting_functs as SF
+from pystaff.SpectralFitting import SpectralFit
+from pystaff import SpectralFitting_functs as SF
 
 
 #Likelihood function here. We could put it in the SpectraFitting class, but when 
@@ -104,7 +104,7 @@ FWHM_gal=2.5
 
 #Now set up the spectral fitting class
 print 'Setting up the fit'
-fit=SpectralFitting.SpectralFit(lamdas, flux, errors, pixel_weights, fit_wavelengths, FWHM_gal, instrumental_resolution=instrumental_resolution, skyspecs=skyspecs, element_imf=element_imf)
+fit=SpectralFit(lamdas, flux, errors, pixel_weights, fit_wavelengths, FWHM_gal, instrumental_resolution=instrumental_resolution, skyspecs=skyspecs, element_imf=element_imf)
 fit.set_up_fit()
 
 # # #Set up the parameters
@@ -248,11 +248,11 @@ p0=p0.T
 nwalkers=200
 nsteps=30000
 
-fname='attempt1_centre.h5'
-backend=emcee3.backends.HDFBackend(fname)
+# fname='attempt1_centre.h5'
+# backend=emcee3.backends.HDFBackend(fname)
 
-sampler = emcee3.EnsembleSampler(nwalkers, ndim, lnprob, args=[theta, variables, bounds], backend=backend, pool=None)
-result = sampler.run_mcmc(p0, nsteps, progress=True)
+# sampler = emcee3.EnsembleSampler(nwalkers, ndim, lnprob, args=[theta, variables, bounds], backend=backend, pool=None)
+# result = sampler.run_mcmc(p0, nsteps, progress=True)
 
 
 ###################################################################################################

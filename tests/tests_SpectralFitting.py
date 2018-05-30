@@ -4,7 +4,7 @@ import unittest
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from pystaff import SpectralFitting 
-from pystaff import SpectralFitting_functs
+from pystaff import SpectralFitting_functs as SF
 import numpy as np
 
 class SpectralFittingTestCase(unittest.TestCase):
