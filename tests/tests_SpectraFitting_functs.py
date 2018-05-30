@@ -3,8 +3,8 @@ import sys
 import unittest
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-import SpectralFitting 
-import SpectralFitting_functs as SF
+from pystaff import SpectralFitting 
+from pystaff import SpectralFitting_functs as SF
 import numpy as np
 
 class SpectralFitting_functs_isolatedfunctions_TestCase(unittest.TestCase):
