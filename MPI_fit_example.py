@@ -2,19 +2,16 @@
 
 ##############################################################################
 import numpy as np
-import emcee3
+import emcee
 import os, sys
 import scipy.interpolate as si 
-from astropy.io import fits
-from astropy.wcs import WCS
+
 import lmfit as LM
 
 import SpectralFitting
 import SpectralFitting_functs as SF
 
 from emcee.utils import MPIPool
-from schwimmbad import MPIPool
-
 
 #Likelihood function here: if we put it in the Spectral Fitting class
 #we'd need to pickle the fit_settings dictionary, which saves pickling the parameters dictionary
@@ -45,33 +42,20 @@ def lnprob(T, theta, var_names, bounds, ret_specs=False):
 #Can select either Kroupa or Salpeter to use with the SSP models
 element_imf='kroupa'
 
-
 ####################################################
 #Read in the data
-M_datafile='/path/to/spectrum.fits'
+datafile='data/example_spectrum.txt'
 
-M_data=fits.open(os.path.expanduser(M_datafile))
-M_header=M_data[1].header
+lamdas, flux, errors, instrumental_resolution=np.genfromtxt(datafile, unpack=True)
 
-M_WCS=WCS(M_header)
+# The instrumental resolution can be included if it's known. We need a value of sigma_inst in km/s for every pixel
+# Otherwise leave it as None
+#instrumental_resolution=None
 
-lambdas=M_WCS.wcs_pix2world(np.arange(M_header['NAXIS1'])[:,np.newaxis], 0).flatten()*(10**10) #In angstroms
-
-flux=M_data[1].data
-errors=M_data[2].data
-
-# ######################################################
 # Sky Spectra
 # Give a list of 1D sky spectra to be scaled and subtracted during the fit
 # Otherwise leave sky as None
-sky=None
-# ######################################################
-
-# ######################################################
-# Instrumental Resolution
-# The instrumental resolution can be included if it's known. We need a value of sigma_inst in km/s for every pixel
-# Otherwise leave it as None
-instrumental_resolution=None
+skyspecs=None
 # ######################################################
 
 
@@ -124,11 +108,11 @@ with MPIPool() as pool:
     #The min and max values act as flat priors
     theta=LM.Parameters()
     #LOSVD parameters
-    theta.add('Vel', value=1800.91, min=-1000.0, max=10000.0)
+    theta.add('Vel', value=1800, min=-1000.0, max=10000.0)
     theta.add('sigma', value=330.0, min=10.0, max=500.0)
 
     #Abundance of Na. Treat this separately, since it can vary up to +1.0 dex
-    theta.add('Na', value=0.0, min=-0.45, max=1.0, vary=True)
+    theta.add('Na', value=0.5, min=-0.45, max=1.0, vary=True)
 
     #Abundance of elements which can vary positively and negatively
     theta.add('Ca', value=0.0,  min=-0.45, max=0.45, vary=True)
@@ -140,7 +124,7 @@ with MPIPool() as pool:
     theta.add('Si', value=0.0, min=-0.45, max=0.45, vary=True)
     theta.add('Ba', value=0.0, min=-0.45, max=0.45, vary=True)
 
-    #Abundance of elements which can only vary aboce 0.0
+    #Abundance of elements which can only vary above 0.0
     theta.add('as_Fe', value=0.0, min=0.0, max=0.45, vary=True)
     theta.add('Cr', value=0.0, min=0.0, max=0.45, vary=False)
     theta.add('Mn', value=0.0, min=0.0, max=0.45, vary=False)
@@ -154,7 +138,7 @@ with MPIPool() as pool:
 
     #Emission line kinematics
     #Each line is fixed to the same velocity and sigma
-    theta.add('Vel_em', value=1800.91, min=0.0, max=10000)
+    theta.add('Vel_em', value=1800, min=0.0, max=10000)
     theta.add('sig_em', value=200.0, min=10.0, max=500.0)
 
     #Emission line strengths
@@ -169,7 +153,7 @@ with MPIPool() as pool:
 
     #Base population parameters
     #Age, Metallicity, and the two IMF slopes
-    theta.add('age', value=10.0, min=1.0, max=14.0)
+    theta.add('age', value=13.0, min=1.0, max=14.0)
     theta.add('Z', value=0.0, min=-1.0, max=0.2)
     theta.add('imf_x1', value=2.35, min=0.5, max=3.5)
     theta.add('imf_x2', value=2.35, min=0.5, max=3.5) 
@@ -190,15 +174,13 @@ with MPIPool() as pool:
     fixed=[ "{}={},".format(thing, theta[thing].value) for thing in theta if not theta[thing].vary]
 
 
-    #Optionally plot the fit with our initial guesses
-    SF.plot_fit(theta, fit.fit_settings)
-
 
 
 
     ###################################################################################################
-    #Set up the fit
     #Set up the initial positions of the walkers as a ball with a different standard deviation in each dimension
+    nwalkers=200
+    nsteps=30000
 
     #Get the spread of the starting positions
     stds=[]
@@ -249,42 +231,18 @@ with MPIPool() as pool:
     ###################################################################################################
     #Do the sampling
     #This may take a while!
-    nwalkers=200
-    nsteps=30000
-
-    fname='MCMC_samples.h5'
-    backend=emcee3.backends.HDFBackend(fname)
 
     #Notice the pool argument here
-    sampler = emcee3.EnsembleSampler(nwalkers, ndim, lnprob, args=[theta, variables, bounds], backend=backend, pool=pool)
-    result = sampler.run_mcmc(p0, nsteps, progress=True)
+    sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=[theta, variables, bounds], pool=pool)
+    result = sampler.run_mcmc(p0, nsteps)
+
 
 
     ###################################################################################################
 
-    #Once we're done, plot the results
-    chisq, chisq_per_dof, (fig, ax)=SF.plot_fit(theta, SF.plot_fit(theta, fit.fit_settings))
-
-    #Get the autocorrelation time and discard the burnin
-    tau = backend.get_autocorr_time(tol=0)
-    burnin = int(2*np.max(tau))
-    print("\tDiscarding burn-in: {} steps".format(burnin))
-    samples = backend.get_chain(discard=burnin, flat=False)
+    #get rid of the burn-in
+    burnin=nsteps-5000
+    samples = sampler.chain[:, burnin:, :].reshape((-1, ndim))
     print("\tDone")
-    n_params=samples.shape[-1]
 
-    best_results = np.array(map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]), zip(*np.percentile(samples, [16, 50, 84], axis=0))))
-
-    for v, r in zip(variables, best_results):
-        print "{}: {:.3f} +{:.2f}/-{:.2f}".format(v, r[0], r[1], r[2])
-
-    ###################################################################################################
-
-    #It's always a good idea to inspect the traces
-    #Can also make corner plots, if you have corner available:
-    #import corner
-    #corner.corner(samples, labels=variables)
-    #plt.savefig('corner_plot.pdf')
-    #And you should check the residuals around the best fit as a function of wavelength
-
-###################################################################################################
+    np.savetxt('samples.txt', samples)

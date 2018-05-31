@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Python Module Index &mdash; PyStaff 1.0 documentation</title>
+  <title>Using MPI &mdash; PyStaff 1.0 documentation</title>
   
 
   
@@ -29,13 +29,7 @@
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
- 
-
-    <script type="text/javascript">
-      DOCUMENTATION_OPTIONS.COLLAPSE_INDEX = true;
-    </script>
-
-
+    <link rel="prev" title="A simple example" href="Example.html" /> 
 
   
   <script src="_static/js/modernizr.min.js"></script>
@@ -89,10 +83,10 @@
             
             
               <p class="caption"><span class="caption-text">Contents:</span></p>
-<ul>
+<ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="readme.html">Quick Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Example.html">A simple example</a></li>
-<li class="toctree-l1"><a class="reference internal" href="MPI_example.html">Using MPI</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Using MPI</a></li>
 </ul>
 
             
@@ -138,10 +132,14 @@
     
       <li><a href="index.html">Docs</a> &raquo;</li>
         
-      <li>Python Module Index</li>
+      <li>Using MPI</li>
     
     
       <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/MPI_example.md.txt" rel="nofollow"> View page source</a>
+          
         
       </li>
     
@@ -153,43 +151,25 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-
-   <h1>Python Module Index</h1>
-
-   <div class="modindex-jumpbox">
-   <a href="#cap-c"><strong>c</strong></a> | 
-   <a href="#cap-s"><strong>s</strong></a>
-   </div>
-
-   <table class="indextable modindextable">
-     <tr class="pcap"><td></td><td>&#160;</td><td></td></tr>
-     <tr class="cap" id="cap-c"><td></td><td>
-       <strong>c</strong></td><td></td></tr>
-     <tr>
-       <td></td>
-       <td>
-       <a href="source/CvD_SSP_tools.html#module-CvD_SSP_tools"><code class="xref">CvD_SSP_tools</code></a></td><td>
-       <em></em></td></tr>
-     <tr class="pcap"><td></td><td>&#160;</td><td></td></tr>
-     <tr class="cap" id="cap-s"><td></td><td>
-       <strong>s</strong></td><td></td></tr>
-     <tr>
-       <td></td>
-       <td>
-       <a href="source/SpectralFitting.html#module-SpectralFitting"><code class="xref">SpectralFitting</code></a></td><td>
-       <em></em></td></tr>
-     <tr>
-       <td></td>
-       <td>
-       <a href="source/SpectralFitting_functs.html#module-SpectralFitting_functs"><code class="xref">SpectralFitting_functs</code></a></td><td>
-       <em></em></td></tr>
-   </table>
+  <div class="section" id="using-mpi">
+<h1>Using MPI<a class="headerlink" href="#using-mpi" title="Permalink to this headline">¶</a></h1>
+<p>In theory, our example can easily be ported to run on a cluster. The <code class="docutils literal"><span class="pre">emcee</span></code> docs give an example of how to get this working <a class="reference external" href="http://dfm.io/emcee/current/user/advanced/#using-mpi-to-distribute-the-computations">here</a>. The file <code class="docutils literal"><span class="pre">MPI_fit_example.py</span></code> gives a simple implementation of this method which I’ve found to work well enough for my purposes.</p>
+<p>MPI works by having each computing node run the exact same file, then distributing tasks to them from a single ‘master’ process. I’ve found that the key to getting MPI to work nicely with PyStaff is to have every node run the <code class="docutils literal"><span class="pre">fit.set_up_fit()</span></code> code, so that each one has a ‘local’ copy of <code class="docutils literal"><span class="pre">fit.fit_settings</span></code>. Each node also has a ‘local’ implementation of the <code class="docutils literal"><span class="pre">lnprob</span></code> function. Whilst this isn’t very memory efficient, is does mean that we don’t have to pickle the <code class="docutils literal"><span class="pre">fit_settings</span></code> dictionary at every step, which I’ve found leads to a slow down of 30-50 times (see the discussion here: <a class="reference external" href="https://github.com/dfm/emcee/blob/master/docs/tutorials/parallel.rst">https://github.com/dfm/emcee/blob/master/docs/tutorials/parallel.rst</a>)</p>
+<p>A nicer way to do this would be to load everything on the master process,  broadcast the necessary bits to each node and then do the fitting. But I’ve never had the time to code this up properly, especially as the above method works as well as I need it to.</p>
+</div>
 
 
            </div>
            
           </div>
           <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="Example.html" class="btn btn-neutral" title="A simple example" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
   
 
   <hr/>

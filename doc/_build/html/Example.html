@@ -29,6 +29,7 @@
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Using MPI" href="MPI_example.html" />
     <link rel="prev" title="Quick Introduction" href="readme.html" /> 
 
   
@@ -86,13 +87,19 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="readme.html">Quick Introduction</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">A simple example</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#packages">Packages</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#load-in-our-data">Load in our data</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#mask-out-any-sections-we-want-to-ignore">Mask out any sections we want to ignore</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#select-the-regions-we-want-to-fit-between">Select the regions we want to fit between</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#load-the-class">Load the class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#setting-up">Setting Up</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#packages">Packages</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#load-in-our-data">Load in our data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#mask-out-any-sections-we-want-to-ignore">Mask out any sections we want to ignore</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#select-the-regions-we-want-to-fit-between">Select the regions we want to fit between</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#load-the-class">Load the class</a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="#an-example-fitting-process">An example fitting process</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#results">Results</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="MPI_example.html">Using MPI</a></li>
 </ul>
 
             
@@ -159,10 +166,12 @@
             
   <div class="section" id="a-simple-example">
 <h1>A simple example<a class="headerlink" href="#a-simple-example" title="Permalink to this headline">¶</a></h1>
-<p>This example is contained in <code class="docutils literal"><span class="pre">fit_example.py</span></code></p>
+<p>This example is contained in <code class="docutils literal"><span class="pre">fit_example.py</span></code>. It walks you through how to run a fit on an example spectrum located in <code class="docutils literal"><span class="pre">data/example_spectrum.txt</span></code>. This file has four columns; the wavelength of each value, the fluxes, the error and the instrumental resolution at that wavelength. It’s made from the SSP models themselves, with added Gaussian noise.</p>
+<div class="section" id="setting-up">
+<h2>Setting Up<a class="headerlink" href="#setting-up" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="packages">
-<h2>Packages<a class="headerlink" href="#packages" title="Permalink to this headline">¶</a></h2>
-<p>You’ll need the following packages to run this simple example, most of which should come as standard in the scientific python library.</p>
+<h3>Packages<a class="headerlink" href="#packages" title="Permalink to this headline">¶</a></h3>
+<p>You’ll need the following packages to run this simple example, many of which should come as standard in the scientific python library.</p>
 <ul class="simple">
 <li><code class="docutils literal"><span class="pre">numpy</span></code>, <code class="docutils literal"><span class="pre">scipy</span></code> and <code class="docutils literal"><span class="pre">matplotlib</span></code></li>
 <li><code class="docutils literal"><span class="pre">lmfit</span></code> for its <code class="docutils literal"><span class="pre">Parameters</span></code> object</li>
@@ -170,25 +179,17 @@
 </ul>
 </div>
 <div class="section" id="load-in-our-data">
-<h2>Load in our data<a class="headerlink" href="#load-in-our-data" title="Permalink to this headline">¶</a></h2>
-<p>We first read the datafile and get the relevant wavelength array, flux spectrum and error spectrum. TODO: Include a datafile with this example</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">M_datafile</span><span class="o">=</span><span class="s1">&#39;/path/to/spectrum.fits&#39;</span>
+<h3>Load in our data<a class="headerlink" href="#load-in-our-data" title="Permalink to this headline">¶</a></h3>
+<p>We first read the datafile and get the relevant wavelength array, flux spectrum and error spectrum, as well as the instrumental resolution.</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">datafile</span><span class="o">=</span><span class="s1">&#39;data/example_spectrum.txt&#39;</span>
 
-<span class="n">M_data</span><span class="o">=</span><span class="n">fits</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="n">M_datafile</span><span class="p">))</span>
-<span class="n">M_header</span><span class="o">=</span><span class="n">M_data</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">header</span>
-
-<span class="n">M_WCS</span><span class="o">=</span><span class="n">WCS</span><span class="p">(</span><span class="n">M_header</span><span class="p">)</span>
-
-<span class="n">lambdas</span><span class="o">=</span><span class="n">M_WCS</span><span class="o">.</span><span class="n">wcs_pix2world</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">M_header</span><span class="p">[</span><span class="s1">&#39;NAXIS1&#39;</span><span class="p">])[:,</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">],</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span><span class="o">*</span><span class="p">(</span><span class="mi">10</span><span class="o">**</span><span class="mi">10</span><span class="p">)</span> <span class="c1">#In angstroms</span>
-
-<span class="n">flux</span><span class="o">=</span><span class="n">M_data</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
-<span class="n">errors</span><span class="o">=</span><span class="n">M_data</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+<span class="n">lamdas</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">errors</span><span class="p">,</span> <span class="n">instrumental_resolution</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">genfromtxt</span><span class="p">(</span><span class="n">datafile</span><span class="p">,</span> <span class="n">unpack</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>You can optionally load a number of sky spectra here, and an array of values for the instrumental resolution as a function of wavelength.</p>
+<p>You can optionally load a number of sky spectra here too.</p>
 </div>
 <div class="section" id="mask-out-any-sections-we-want-to-ignore">
-<h2>Mask out any sections we want to ignore<a class="headerlink" href="#mask-out-any-sections-we-want-to-ignore" title="Permalink to this headline">¶</a></h2>
+<h3>Mask out any sections we want to ignore<a class="headerlink" href="#mask-out-any-sections-we-want-to-ignore" title="Permalink to this headline">¶</a></h3>
 <p>We can give a list of two-component arrays with ‘start’ and ‘stop’ wavelengths around regions of the spectrum we don’t want to fit. These might be areas of residual telluric absorption, particularly bad sky-lines, etc. These should be <em>observed</em> wavelengths, so can be read straight from the spectrum.</p>
 <div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">telluric_lam_1</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">6862</span><span class="p">,</span> <span class="mi">6952</span><span class="p">]])</span>
 <span class="n">telluric_lam_2</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">7586</span><span class="p">,</span> <span class="mi">7694</span><span class="p">]])</span>
@@ -197,21 +198,81 @@
 </div>
 </div>
 <div class="section" id="select-the-regions-we-want-to-fit-between">
-<h2>Select the regions we want to fit between<a class="headerlink" href="#select-the-regions-we-want-to-fit-between" title="Permalink to this headline">¶</a></h2>
+<h3>Select the regions we want to fit between<a class="headerlink" href="#select-the-regions-we-want-to-fit-between" title="Permalink to this headline">¶</a></h3>
 <p>During the fit, we have to compare the model and our data and use multiplicative Legendre polynomials to correct for small differences in continuum shape caused by the instrument or poor flux calibration. Ideally we’d fit the entire spectrum at once, but this tends to make finding these polynomials too slow. Here, we compromise by splitting our spectrum into four sections, with each one getting its own set of polynomials. These are then combined in the likelihood function.</p>
 <p>These wavelength are <em>rest frame</em> wavelengths. They’ll be the values which we plot on the x-axis at the end.</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">fit_wavelengths</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">4600</span><span class="p">,</span> <span class="mi">5600</span><span class="p">],</span> <span class="p">[</span><span class="mi">5600</span><span class="p">,</span> <span class="mi">6800</span><span class="p">],</span> <span class="p">[</span><span class="mi">6800</span><span class="p">,</span> <span class="mi">8000</span><span class="p">],</span> <span class="p">[</span><span class="mi">8000</span><span class="p">,</span>  <span class="mi">9000</span><span class="p">],</span> <span class="p">[</span><span class="mi">9700</span><span class="p">,</span> <span class="mi">10500</span><span class="p">]])</span>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">fit_wavelengths</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">4750</span><span class="p">,</span> <span class="mi">5600</span><span class="p">],</span> <span class="p">[</span><span class="mi">5600</span><span class="p">,</span> <span class="mi">6800</span><span class="p">],</span> <span class="p">[</span><span class="mi">6800</span><span class="p">,</span> <span class="mi">8000</span><span class="p">],</span> <span class="p">[</span><span class="mi">8000</span><span class="p">,</span>  <span class="mi">9200</span><span class="p">]])</span>
 </pre></div>
 </div>
 <p>TODO: Sort out what FWML_gal is</p>
 </div>
 <div class="section" id="load-the-class">
-<h2>Load the class<a class="headerlink" href="#load-the-class" title="Permalink to this headline">¶</a></h2>
+<h3>Load the class<a class="headerlink" href="#load-the-class" title="Permalink to this headline">¶</a></h3>
 <p>We can now load our SpectralFit class:</p>
 <div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">fit</span><span class="o">=</span><span class="n">SpectralFit</span><span class="p">(</span><span class="n">lamdas</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">errors</span><span class="p">,</span> <span class="n">pixel_weights</span><span class="p">,</span> <span class="n">fit_wavelengths</span><span class="p">,</span> <span class="n">FWHM_gal</span><span class="p">,</span> <span class="n">instrumental_resolution</span><span class="o">=</span><span class="n">instrumental_resolution</span><span class="p">,</span> <span class="n">skyspecs</span><span class="o">=</span><span class="n">skyspecs</span><span class="p">,</span> <span class="n">element_imf</span><span class="o">=</span><span class="n">element_imf</span><span class="p">)</span>
 <span class="n">fit</span><span class="o">.</span><span class="n">set_up_fit</span><span class="p">()</span>
 </pre></div>
 </div>
+<p>which will read in all of our SSP templates, log-rebin them and get everything read to fit.</p>
+</div>
+</div>
+<div class="section" id="an-example-fitting-process">
+<h2>An example fitting process<a class="headerlink" href="#an-example-fitting-process" title="Permalink to this headline">¶</a></h2>
+<p>We now have our list of free parameters in the model. This is the <code class="docutils literal"><span class="pre">lmfit</span></code> Parameters object, which starts:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">theta</span><span class="o">=</span><span class="n">LM</span><span class="o">.</span><span class="n">Parameters</span><span class="p">()</span>
+<span class="c1">#LOSVD parameters</span>
+<span class="n">theta</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s1">&#39;Vel&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="nb">min</span><span class="o">=-</span><span class="mf">1000.0</span><span class="p">,</span> <span class="nb">max</span><span class="o">=</span><span class="mf">10000.0</span><span class="p">)</span>
+<span class="n">theta</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s1">&#39;sigma&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mf">300.0</span><span class="p">,</span> <span class="nb">min</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span> <span class="nb">max</span><span class="o">=</span><span class="mf">500.0</span><span class="p">)</span>
+
+<span class="c1">#Abundance of Na. Treat this separately, since it can vary up to +1.0 dex</span>
+<span class="n">theta</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s1">&#39;Na&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="nb">min</span><span class="o">=-</span><span class="mf">0.45</span><span class="p">,</span> <span class="nb">max</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">vary</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+<span class="c1">#Abundance of elements which can vary positively and negatively</span>
+<span class="n">theta</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s1">&#39;Ca&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>  <span class="nb">min</span><span class="o">=-</span><span class="mf">0.45</span><span class="p">,</span> <span class="nb">max</span><span class="o">=</span><span class="mf">0.45</span><span class="p">,</span> <span class="n">vary</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">theta</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s1">&#39;Fe&#39;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="nb">min</span><span class="o">=-</span><span class="mf">0.45</span><span class="p">,</span> <span class="nb">max</span><span class="o">=</span><span class="mf">0.45</span><span class="p">,</span> <span class="n">vary</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="c1"># and so on...</span>
+</pre></div>
+</div>
+<p>Each of these variables can be switched on and off using the <code class="docutils literal"><span class="pre">vary</span></code> keyword. The <code class="docutils literal"><span class="pre">min</span></code> and <code class="docutils literal"><span class="pre">max</span></code> keywords give the range of the (flat) prior. More details can be found at the <code class="docutils literal"><span class="pre">lmfit</span></code> documentation <a class="reference external" href="https://lmfit-py.readthedocs.io/en/latest/parameters.html">here</a></p>
+<p>We now have a way to make templates at various model parameters, and compare them to our data! Try changing a few values of <code class="docutils literal"><span class="pre">theta</span></code> and seeing what happens to the model. You can plot the fit at any time by calling <code class="docutils literal"><span class="pre">SF.plot_fit(theta,</span> <span class="pre">fit.fit_settings)</span></code>.</p>
+<p>Once we’re happy with the variables we want to fit for, we select the starting positions of our walkers. Here we’re just assuming a small ball around the initial parameter positions, but you should check that starting in different (or random) areas of parameter space gives you the same results!</p>
+<p>These functions make this ball, using a different standard deviation in each dimension:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="c1">#Now get the starting values for each parameter, as well as the prior bounds</span>
+<span class="n">start_values</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="n">SF</span><span class="o">.</span><span class="n">get_start_vals_and_bounds</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>
+<span class="n">p0</span><span class="o">=</span><span class="n">SF</span><span class="o">.</span><span class="n">get_starting_poitions_for_walkers</span><span class="p">(</span><span class="n">start_values</span><span class="p">,</span> <span class="n">stds</span><span class="p">,</span> <span class="n">nwalkers</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>We can now run the fit using <code class="docutils literal"><span class="pre">emcee</span></code> (or any program of your choice: other MCMC samplers are available!):</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">print</span><span class="p">(</span><span class="s2">&quot;Running the fitting with {} walkers for {} steps&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">nwalkers</span><span class="p">,</span> <span class="n">nsteps</span><span class="p">))</span>
+<span class="n">sampler</span> <span class="o">=</span> <span class="n">emcee</span><span class="o">.</span><span class="n">EnsembleSampler</span><span class="p">(</span><span class="n">nwalkers</span><span class="p">,</span> <span class="n">ndim</span><span class="p">,</span> <span class="n">lnprob</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">[</span><span class="n">theta</span><span class="p">,</span> <span class="n">variables</span><span class="p">,</span> <span class="n">bounds</span><span class="p">],</span> <span class="n">pool</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">sampler</span><span class="o">.</span><span class="n">run_mcmc</span><span class="p">(</span><span class="n">p0</span><span class="p">,</span> <span class="n">nsteps</span><span class="p">,</span> <span class="n">progress</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal"><span class="pre">emcee</span></code> documentation can be found <a class="reference external" href="http://dfm.io/emcee/current/">here</a>.</p>
+</div>
+<div class="section" id="results">
+<h2>Results<a class="headerlink" href="#results" title="Permalink to this headline">¶</a></h2>
+<p>Once our fit has finished (which may take a while!), we can get the samples, find various sample statistics of our posterior and plot the fit itself:</p>
+<div class="highlight-guess"><div class="highlight"><pre><span></span>#get rid of the burn-in
+burnin=nsteps-5000
+samples = sampler.chain[:, burnin:, :].reshape((-1, ndim))
+print(&quot;\tDone&quot;)
+
+#Get the 16th, 50th and 84th percentiles of the marginalised posteriors for each parameter
+best_results = np.array(map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]), zip(*np.percentile(samples, [16, 50, 84], axis=0))))
+
+for v, r in zip(variables, best_results):
+    print &quot;{}: {:.3f} +{:.2f}/-{:.2f}&quot;.format(v, r[0], r[1], r[2])
+#Make a set of parameters with the results
+results_theta=LM.Parameters()
+for v, r in zip(variables, best_results):
+    results_theta.add(&#39;{}&#39;.format(v), value=r, vary=False)
+#... and plot
+SF.plot_fit(results_theta, fit.fit_settings)
+</pre></div>
+</div>
+<p>It’s always a good idea to look at a corner plot of your results (each parameter plotted against the others, as well as a one dimensional marginalised histogram). Finally, inspecting the residuals as a function of wavelength is also very important! A lot of issues with the fitting can be diagnosed this way, as well as getting a feeling for how reliable the results may be.</p>
+<p>As an aside, the v3.0.0dev version of <code class="docutils literal"><span class="pre">emcee</span></code> has some really nice features- such as incrementally saving your progress to a <code class="docutils literal"><span class="pre">h5</span></code> file and showing a built in progress bar. I’d highly recommend keeping an eye on it!</p>
 </div>
 </div>
 
@@ -222,6 +283,8 @@
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="MPI_example.html" class="btn btn-neutral float-right" title="Using MPI" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="readme.html" class="btn btn-neutral" title="Quick Introduction" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>

@@ -85,6 +85,7 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../readme.html">Quick Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../Example.html">A simple example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../MPI_example.html">Using MPI</a></li>
 </ul>
 
             
@@ -153,10 +154,12 @@
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span> 
 <span class="kn">import</span> <span class="nn">scipy.constants</span> <span class="k">as</span> <span class="nn">const</span>
+
+<span class="c1">#Relative imports are such a headache</span>
 <span class="k">try</span><span class="p">:</span>
     <span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">SpectralFitting_functs</span> <span class="k">as</span> <span class="n">SF</span>
     <span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">CvD_SSP_tools</span> <span class="k">as</span> <span class="n">CvDTools</span>
-
+<span class="c1">#autodoc doesn&#39;t like the above imports, so add this to make the documentation work</span>
 <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
     <span class="kn">import</span> <span class="nn">SpectralFitting_functs</span> <span class="k">as</span> <span class="nn">SF</span>
     <span class="kn">import</span> <span class="nn">CvD_SSP_tools</span> <span class="k">as</span> <span class="nn">CvDTools</span>

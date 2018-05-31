@@ -14,7 +14,8 @@ PyStaff fits model templates to optical and near-infrared spectra of nearby gala
    :caption: Contents:
 
    Quick Introduction <readme>
-   Example
+   A simple example <Example>
+   Using MPI <MPI_example>
 
 Indices and tables
 ==================
