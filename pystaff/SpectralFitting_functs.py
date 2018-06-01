@@ -489,18 +489,16 @@ def get_linear_best_fit_template(theta, parameters, fit_class, convole=True):
 def lnlike(theta, parameters, plot=False, ret_specs=False):
 
     """
-    The log-Likelihood function of the fitting
-    TODO: Add more here!
+    The log-Likelihood function of the fitting. TODO- expand this. 
     Arguments:
         theta (lmfit Parameters): An lmfit Parameters object
         parameters (dict): A dictionary containing... TODO: Rename this and tidy up!
         plot (Boolean): Deprecated. TODO remove
         ret_specs (boolean): Default is False. If True, return a series of spectra made during the fitting process
     Returns:
-        * likelihood (float): The log-likelihood of the fit parameters
-        if ret_specs is True, also return:
-        * TODO List all these
-        * likelihood, [lam, t, e, s, skies, g_lines, p, w]  
+        (float): The log-likelihood of the fit parameters. If ret_specs is True, also return:
+            * likelihood 
+            * A tuple containing (lam, t, e, s, skies, g_lines, p, w). Add more info here. 
 
     """ 
 
