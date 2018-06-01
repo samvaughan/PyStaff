@@ -204,12 +204,11 @@ def plot_fit(theta, parameters, fig=None, axs=None, color='b'):
     
     Returns:
         (tuple): A tuple containing:
-            * chisq (float): the value of Chi-squared for the model
-            * chisq_per_dof (float): Chi-squared per degree of freedom
+            * likelihood (float): the likelihood for the model
             * fig, axs (tuple): A tuple of the matplotlib figure and axes objects
     """
 
-    chisq, chisq_per_dof, [lams, temps, errors, specs, skies, emission_lines, polys, w]=lnlike(theta, parameters, ret_specs=True)
+    likelihood, [lams, temps, errors, specs, skies, emission_lines, polys, w]=lnlike(theta, parameters, ret_specs=True)
 
     print('Chisq per DoF is {}'.format(chisq_per_dof))
 
@@ -501,7 +500,7 @@ def lnlike(theta, parameters, plot=False, ret_specs=False):
         * likelihood (float): The log-likelihood of the fit parameters
         if ret_specs is True, also return:
         * TODO List all these
-        * likelihood, -1.0*likelihood/n_dof, [lam, t, e, s, skies, g_lines, p, w]  
+        * likelihood, [lam, t, e, s, skies, g_lines, p, w]  
 
     """ 
 
@@ -667,31 +666,28 @@ def lnlike(theta, parameters, plot=False, ret_specs=False):
 
 
 
-        #subtract the sky
-        g_corrected=(g -sky)
-        
+       
 
         #Order of the polynomial
         morder=int((fit_range[1]-fit_range[0])/100)
         
         
         #Fit the polynomials, weighting by the noise
-        #poly=C.fit_continuum(gmask[0], g/t, n**2, clip=[2, 10.0, 10.0], order=morder)
-        poly=_fit_legendre_polys(g_corrected/t, morder, weights=1.0/n**2)
+        poly=_fit_legendre_polys((g-sky)/(t+gas), morder, weights=1.0/n**2)
 
         #Scale the noise by some fraction ln_f
         n_corrected=np.sqrt((1+np.exp(2*ln_f))*n**2)         
 
         #Calculate the chi_squared
-        chisqs[gmask]=(((g_corrected + poly*gas -t*poly)/n_corrected)**2)
+        chisqs[gmask]=(((g - sky - poly*gas -t*poly)/n_corrected)**2)
 
         
         lams.append(np.exp(logLam_gal[gmask]))
         temps.append(poly*t)
         gas_lines.append(poly*gas)
-        residuals.append(g_corrected + poly*gas-poly*t)
+        residuals.append(g - sky - poly*gas-poly*t)
         errors.append(n_corrected)
-        specs.append(g_corrected)
+        specs.append(g - sky)
         skies.append(sky)
         polys.append(poly)
 
@@ -730,11 +726,11 @@ def lnlike(theta, parameters, plot=False, ret_specs=False):
 
 
     #Log likelihood- chisqaured plus sum of errors, which now depend on ln_f
-    likelihood=-0.5*(chisq + np.sum(np.log(e**2)*w))
+    likelihood=-0.5*(chisq) - 0.5*np.sum(np.log(e**2)*w)
 
 
     if ret_specs:
-        return likelihood, -1.0*likelihood/n_dof, [lam, t, e, s, skies, g_lines, p, w]  
+        return likelihood, [lam, t, e, s, skies, g_lines, p, w]  
 
     return likelihood
 
