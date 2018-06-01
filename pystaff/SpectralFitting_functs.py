@@ -210,8 +210,6 @@ def plot_fit(theta, parameters, fig=None, axs=None, color='b'):
 
     likelihood, [lams, temps, errors, specs, skies, emission_lines, polys, w]=lnlike(theta, parameters, ret_specs=True)
 
-    print('Chisq per DoF is {}'.format(chisq_per_dof))
-
     #galaxy, noise, all_sky, weights, velscale, goodpixels, vsyst, interp_funct, correction_interps, logLams, logLam_gal, fit_wavelengths=parameters
     #Unpack the parameters we need
     fit_wavelengths=parameters['fit_wavelengths']
@@ -306,7 +304,7 @@ def plot_fit(theta, parameters, fig=None, axs=None, color='b'):
 
     fig.tight_layout()
 
-    return chisq, chisq_per_dof, (fig, axs)
+    return likelihood, (fig, axs)
 
 
 
