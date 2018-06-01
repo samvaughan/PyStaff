@@ -413,8 +413,6 @@ def _get_correction(interpolator, logLams, elems, abunds, age, Z):
     """
     Get the response function we apply to our base model
 
-
-
     Arguments:
         interpolator (scipy RegularGridInterpolator): An interpolator for the required correction
         logLams (array): Log-rebinned wavelength array
@@ -490,11 +488,13 @@ def lnlike(theta, parameters, plot=False, ret_specs=False):
 
     """
     The log-Likelihood function of the fitting. TODO- expand this. 
+
     Arguments:
         theta (lmfit Parameters): An lmfit Parameters object
         parameters (dict): A dictionary containing... TODO: Rename this and tidy up!
         plot (Boolean): Deprecated. TODO remove
         ret_specs (boolean): Default is False. If True, return a series of spectra made during the fitting process
+
     Returns:
         (float): The log-likelihood of the fit parameters. If ret_specs is True, also return:
             * likelihood 
