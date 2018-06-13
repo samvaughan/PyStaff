@@ -576,21 +576,10 @@ def lnlike(theta, parameters, plot=False, ret_specs=False):
     #Ranges we fit over- these have to change with redshift
     fit_ranges=fit_wavelengths*(np.exp(vel/c_light))
 
-    #Ranges of pixels to mask. These also have to change with z
-    #mask_ranges=masked_wavelengths*(np.exp(vel/c_light))
-
-    #make the array to mask out things from the Chi-squared
-    # pixel_mask=np.ones_like(galaxy, dtype=bool)
-    # for array in mask_ranges:
-    #     m=make_mask(logLam_gal, array)
-    #     pixel_mask= m & pixel_mask
    
     chisqs=np.zeros_like(galaxy)
 
-    #Median both the galaxy and noise. Added in October 2017!
-    #Changed back in Jan 2018!
-    #galmedian=np.median(galaxy)
-    #t_median=np.median(temp)
+
 
 
 
@@ -638,6 +627,7 @@ def lnlike(theta, parameters, plot=False, ret_specs=False):
         n=noise[gmask]
         t=temp[gmask]
         gas=convolved_em_lines[gmask]
+        ws=weights[gmask].astype(bool)
 
 
         # galmedian=np.median(g)
@@ -667,9 +657,11 @@ def lnlike(theta, parameters, plot=False, ret_specs=False):
         #Order of the polynomial
         morder=int((fit_range[1]-fit_range[0])/100)
         
-        
-        #Fit the polynomials, weighting by the noise
-        poly=_fit_legendre_polys((g-sky)/(t+gas), morder, weights=1.0/n**2)
+
+        #Fit the polynomials, weighting by the noise and ignoring pixels with 0 weight
+        poly_weights=1.0/n**2
+        poly_weights[~ws]=0.0
+        poly=_fit_legendre_polys((g-sky)/(t+gas), morder, weights=poly_weights)
 
         #Scale the noise by some fraction ln_f
         n_corrected=np.sqrt((1+np.exp(2*ln_f))*n**2)         
