@@ -208,18 +208,7 @@ assert len(stds)==len(variables), "You must have the same number of dimensions f
 
 #Now get the starting values for each parameter, as well as the prior bounds
 start_values, bounds=SF.get_start_vals_and_bounds(theta)
-p0=SF.get_starting_poitions_for_walkers(start_values, stds, nwalkers)
-#Check everything is within the bounds
-#Make sure the positive parameters stay positive
-p0[2+n_general:2+n_general+n_positive, :]=np.abs(p0[2+n_general:2+n_general+n_positive, :])
-#This checks to see if any rows of the array have values which are too high, and replaces them with the upper bound value
-#Add the machine epsilon to deal with cases where we end up with, for example, one walker set to be -0.20000000000000001 instead of -0.2
-p0[p0<bounds[:, 0, None]]=bounds[np.any(p0<bounds[:, 0, None], axis=1), 0]+10*np.finfo(np.float64).eps
-#And the same for any values which are too low
-p0[p0>bounds[:, 1, None]]=bounds[np.any(p0>bounds[:, 1, None], axis=1), 1]-10*np.finfo(np.float64).eps
-
-assert np.all((p0>bounds[:, 0, None])&(p0<bounds[:, 1, None])), 'Some walkers are starting in bad places of parameter space!'
-p0=p0.T
+p0=SF.get_starting_poitions_for_walkers(start_values, stds, nwalkers, bounds)
 ###################################################################################################
 
 

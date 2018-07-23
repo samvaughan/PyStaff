@@ -1,15 +1,16 @@
 
 
-from __future__ import absolute_import, division, print_function, unicode_literals
+
 
 import numpy as np 
 import scipy.constants as const
 
 from scipy import special
 import scipy.interpolate as si
+import collections
 
 
-def rebin_MUSE_spectrum(lamdas, flux, errors, pixel_weights, instrumental_resolution=None, skyspecs=None, c=299792.458):
+def rebin_spectrum(lamdas, flux, errors, pixel_weights, instrumental_resolution=None, skyspecs=None, c=299792.458):
     """
     Take a set of spectra and rebin to have uniform spacing in log lambda, rather than lambda. Note that the spectra can't have any gaps in them- the array **must** be 
     a continous array of values.
@@ -128,7 +129,11 @@ def get_start_vals_and_bounds(theta):
 
     return var_arr, bounds
 
-def get_starting_poitions_for_walkers(start_values, stds, nwalkers):
+
+
+
+
+def get_starting_poitions_for_walkers(start_values, stds, nwalkers, bounds):
 
     """
     Given a set of N starting values and sigmas for each value, make a set of random starting positions for M walkers. This is accomplished by 
@@ -139,12 +144,42 @@ def get_starting_poitions_for_walkers(start_values, stds, nwalkers):
         stds: (array): A 1D array of standard deviations, corresponding to the spread around the start value for each parameter
         nwakers: (int): The number of walkers we'll use.
     Returns:
-        (array): An (N_parameters x N_walkers) array of starting positions.
+        (array): An (N_walkers x N_parameters) array of starting positions.
     """
 
     ball=np.random.randn(start_values.shape[0], nwalkers)*stds[:, None] + start_values[:, None]
 
-    return ball
+    ball=check_walker_starting_positions(ball, bounds)
+
+    return ball.T
+
+
+def check_walker_starting_positions(p0, bounds):
+
+    """
+    Sometimes our random starting positions for the walkers scatter outside our prior ranges. This function checks which walkers are oustide 
+    the bounds limits and replaces them with the upper limut of the prior- so, for example, an age of 14.1 Gys becomes 14 Gyrs.
+
+    Arguments:
+        p0 (array): A 2D array of shape (N_parameters, N_walkers) of starting positions
+        bounds (array): A 2D array of shape (N_parameters, 2). Each row of the array is (lower, higher) bounds for the repsective parameter.
+
+    Returns:
+        (array): An (N_parameters x N_walkers) array of starting positions.
+    """
+
+    walkers_too_low=np.where(p0<bounds[:, 0, None])
+    walkers_too_high=np.where(p0>bounds[:, 1, None])
+
+    for parameter, walker_number in zip(*walkers_too_low):
+        p0[parameter, walker_number]=bounds[parameter, 0]+10*np.finfo(float).eps
+
+    for parameter, walker_number in zip(*walkers_too_high):
+        p0[parameter, walker_number]=bounds[parameter, 1]-10*np.finfo(float).eps
+
+    assert np.all((p0>bounds[:, 0, None])&(p0<bounds[:, 1, None])), 'Some walkers are starting in bad places of parameter space!'
+
+    return p0
 
 def make_mask(lamdas, wavelengths):
 
@@ -218,14 +253,8 @@ def plot_fit(theta, parameters, fig=None, axs=None, color='b'):
 
     import matplotlib.pyplot as plt 
     import matplotlib.gridspec as gridspec
-    import matplotlib.ticker as ticker   
-
-
-
-    
-
-
-    
+    import matplotlib.ticker as ticker 
+        
     if fig is None or axs is None:
 
         N_cols=np.ceil(len(fit_wavelengths)/2).astype(int)
@@ -829,7 +858,7 @@ def emline(logLam_temp, line_wave, FWHM_gal):
     :return: LSF computed for every logLam_temp
 
     """
-    if callable(FWHM_gal):
+    if isinstance(FWHM_gal, collections.Callable):
         FWHM_gal = FWHM_gal(line_wave)
 
     # Compute pixels borders for Gaussian integration

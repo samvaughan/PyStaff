@@ -103,7 +103,7 @@ class SpectralFit(object):
 
     def rebin_spectra(self):
 
-        loggalaxy, lognoise, log_skyspecs, log_inst_res, logweights, velscale, goodpixels, lam_range_gal, logLam = SF.rebin_MUSE_spectrum(self.lin_lam, self.lin_flux, self.lin_noise, self.lin_weights, instrumental_resolution=self.instrumental_resolution, skyspecs=self.lin_skyspecs, c=SpectralFit.c_light)
+        loggalaxy, lognoise, log_skyspecs, log_inst_res, logweights, velscale, goodpixels, lam_range_gal, logLam = SF.rebin_spectrum(self.lin_lam, self.lin_flux, self.lin_noise, self.lin_weights, instrumental_resolution=self.instrumental_resolution, skyspecs=self.lin_skyspecs, c=SpectralFit.c_light)
 
         self.lam_range_gal=lam_range_gal
         self.velscale=velscale

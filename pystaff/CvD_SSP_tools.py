@@ -1,9 +1,10 @@
+
 import numpy as np 
 import scipy.constants as const
 from astropy.io import fits
 import scipy.interpolate as si
 import glob
-import SpectralFitting_functs as SF
+from . import SpectralFitting_functs as SF
 
 class Spectrum(object):
     """
@@ -78,7 +79,7 @@ class Spectrum(object):
         # start defining spectrum parts
         if lamspec is not None:
             # check that lam has been given
-            if lam is None: raise "If you give lamspec, you must also give lam"
+            if lam is None: raise Exception("If you give lamspec, you must also give lam")
 
             # make sure 2d
             flam = np.atleast_2d(lamspec)
@@ -138,7 +139,7 @@ class Spectrum(object):
         # add user dictionary for extra info
         if userdict is not None:
             self.__userdict__ = userdict
-            keys = userdict.keys()
+            keys = list(userdict.keys())
             for key in keys:
                 setattr(self, key, singleOrList2Array(userdict[key]))
                  
@@ -234,7 +235,7 @@ def load_varelem_CvD16ssps(dirname='/Data/stellarpops/CvD2', folder='atlas_rfn_v
             
             model=glob.glob('{}/{}/atlas_ssp*t{}*{}*{}.s100'.format(dirname, folder, age, Z, imf_name))[0]
             if verbose:
-                print 'Loading {}'.format(model)
+                print('Loading {}'.format(model))
             data=np.genfromtxt(model)
 
 
@@ -352,7 +353,7 @@ def prepare_CvD2_templates_twopartIMF(templates_lam_range, velscale, verbose=Tru
     for a, Z in enumerate(Zs):    
         for b, age in enumerate(ages):
             model=glob.glob(os.path.expanduser('~/z/Data/stellarpops/CvD2/vcj_twopartimf/vcj_ssp_v8/VCJ_v8_mcut0.08_t{}*{}.ssp.imf_varydoublex.s100'.format(age, Z)))[0]
-            print 'Loading {}'.format(model)
+            print('Loading {}'.format(model))
             data=np.genfromtxt(model)
 
             for c, counter1 in enumerate(imfs_X1):
@@ -483,7 +484,7 @@ def prepare_CvD2_element_templates(templates_lam_range, velscale, elements, verb
 
     sspNew, logLam_template, template_velscale = SF.log_rebin(templates_lam_range, data, velscale=velscale)
 
-    print 'SSP New is {}'.format(len(sspNew))
+    print('SSP New is {}'.format(len(sspNew)))
 
     positive_only_templates=np.empty((len(positive_only_elems), len(positive_only_elem_steps), n_ages, n_Zs, len(sspNew)))
     general_templates=np.empty((len(normal_elems), len(elem_steps), n_ages, n_Zs, len(sspNew)))
@@ -491,10 +492,10 @@ def prepare_CvD2_element_templates(templates_lam_range, velscale, elements, verb
     na_templates=np.empty((len(Na_elem_steps), n_ages, n_Zs, len(sspNew)))
     T_templates=np.empty((len(T_steps), n_ages, n_Zs, len(sspNew)))
 
-    print 'Making the Positive-Only Correction templates'
+    print('Making the Positive-Only Correction templates')
     #Do the positve only correction templates:
     for a, elem in enumerate(positive_only_elems):
-        print '\t{}'.format(elem)
+        print('\t{}'.format(elem))
         for b, step in enumerate(positive_only_elem_steps):
             for c, _ in enumerate(ages):
                 for d, _ in enumerate(Zs):
@@ -531,11 +532,11 @@ def prepare_CvD2_element_templates(templates_lam_range, velscale, elements, verb
 
     # import matplotlib.pyplot as plt
     # plt.figure()
-    print 'Making the General Correction templates'
+    print('Making the General Correction templates')
     #Do the general templates
     for a, elem in enumerate(normal_elems):
         
-        print '\t{}'.format(elem)
+        print('\t{}'.format(elem))
         for b, step in enumerate(elem_steps):
             for c, _ in enumerate(ages):
                 for d, _ in enumerate(Zs):
@@ -579,7 +580,7 @@ def prepare_CvD2_element_templates(templates_lam_range, velscale, elements, verb
 
 
     #Do the Na templates:
-    print 'Making the Na Correction template'
+    print('Making the Na Correction template')
     for a, step in enumerate(Na_elem_steps):
         for b, _ in enumerate(ages):
             for c, _ in enumerate(Zs):
@@ -631,7 +632,7 @@ def prepare_CvD2_element_templates(templates_lam_range, velscale, elements, verb
                 na_templates[a, b, c, :]=sspNew
 
 
-    print 'Making the Temperature Correction template'
+    print('Making the Temperature Correction template')
     for a, step in enumerate(T_steps):
         for b, _ in enumerate(ages):
             for c, _ in enumerate(Zs):
