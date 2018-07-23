@@ -514,15 +514,6 @@ def prepare_CvD2_element_templates(templates_lam_range, velscale, elements, verb
                     interp=si.interp1d(x, y, fill_value='extrapolate')
                     data=interp(new_x)
 
-
-                    #DON'T DO THIS ANY MORE
-                    #convolve the templates to have a uniform resolution of 100 km/s
-                    #This is fine for the massive galaxies we're going to study, and assumes that the instrumental resolution is below this. 
-                    #Resolution of the CvD models is dLam=2.51A below 7500A and R=2000 above 7500A
-                    #dV=const.c*2.51/(new_x*1000*np.sqrt(8*np.log(2)))
-                    #dV[new_x>7500]=65.3 #R=2000.0
-                    #sigs=np.sqrt(100.0**2-dV**2)
-
                     #data=util.gaussian_filter1d(data, sigs/velscale)
                             
                     sspNew, logLam_template, template_velscale = SF.log_rebin(templates_lam_range, data, velscale=velscale)
@@ -559,14 +550,6 @@ def prepare_CvD2_element_templates(templates_lam_range, velscale, elements, verb
                     interp=si.interp1d(x, y, fill_value='extrapolate')
                     data=interp(new_x)
 
-                    #DON'T DO THIS ANY MORE
-                    #convolve the templates to have a uniform resolution of 100$
-                    #This is fine for the massive galaxies we're going to study$
-                    #Resolution of the CvD models is dLam=2.51A below 7500A and$
-                    #dV=const.c*2.51/(new_x*1000*np.sqrt(8*np.log(2)))
-                    #dV[new_x>7500]=65.3 #R=2000.0
-                    #sigs=np.sqrt(100.0**2-dV**2)
-                            
                     #data=util.gaussian_filter1d(data, sigs/velscale)
 
                     sspNew, logLam_template, template_velscale = SF.log_rebin(templates_lam_range, data, velscale=velscale)

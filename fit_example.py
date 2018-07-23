@@ -62,6 +62,7 @@ skyspecs=None
 # ######################################################
 # Mask out regions that we don't want to fit, e.g. around telluric residuals, particularly nasty skylines, etc
 # THESE SHOULD BE OBSERVED WAVELENGTHS
+# A few examples of areas I often avoid due to skylines or telluric residuals
 telluric_lam_1=np.array([[6862, 6952]])
 telluric_lam_2=np.array([[7586, 7694]])
 skylines=np.array([[8819, 8834], [8878.0, 8893], [8911, 8925], [8948, 8961]])
@@ -86,7 +87,8 @@ fit_wavelengths=np.array([[4750, 5600], [5600, 6800], [6800, 8000], [8000,  9200
 string_fit_wavelengths=["{} to {}".format(pair[0], pair[1]) for pair in fit_wavelengths]
 
 #FWHM. Should make a way to measure this!
-FWHM_gal=2.5
+#This should be the FWHM in pixels of the instrument used to observe the spectrum.
+FWHM_gal=1.0
 
 #Now set up the spectral fitting class
 print('Setting up the fit')
@@ -221,26 +223,34 @@ sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=[theta, variables, 
 result = sampler.run_mcmc(p0, nsteps)
 
 
-# ###################################################################################################
+####################################################################################################
 
 #get rid of the burn-in
-burnin=nsteps-5000
+burnin=np.array(nsteps-5000).clip(0)
 samples = sampler.chain[:, burnin:, :].reshape((-1, ndim))
 print("\tDone")
 
 #Get the 16th, 50th and 84th percentiles of the marginalised posteriors for each parameter 
-best_results = np.array(map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]), zip(*np.percentile(samples, [16, 50, 84], axis=0))))
+best_results = np.array(list(map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]), zip(*np.percentile(samples, [16, 50, 84], axis=0)))))
+#If your posterior surface isn't a nice symmetric Gaussian, then the vector of median values for each parameter (as we're doing here)
+#could very well correspond to an unlikely area of parameter space and you'll need to do something different to this!
+
 
 for v, r in zip(variables, best_results):
     print("{}: {:.3f} +{:.2f}/-{:.2f}".format(v, r[0], r[1], r[2]))
+
 #Make a set of parameters with the results
 results_theta=LM.Parameters()
 for v, r in zip(variables, best_results):
-    results_theta.add('{}'.format(v), value=r, vary=False)
+    print(v, r)
+    results_theta.add('{}'.format(v), value=r[0], vary=False)
+#and include the things we kept fixed originally too:
+[results_theta.add('{}'.format(thing), value=theta[thing].value, vary=False) for thing in theta if not theta[thing].vary]
+
 #... and plot
 SF.plot_fit(results_theta, fit.fit_settings)
 
-# ###################################################################################################
+####################################################################################################
 
 #It's always a good idea to inspect the traces
 #Can also make corner plots, if you have corner available:
