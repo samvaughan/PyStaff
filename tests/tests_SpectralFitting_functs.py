@@ -16,31 +16,46 @@ class SpectralFitting_functs_isolatedfunctions_TestCase(unittest.TestCase):
         """Does the `get_starting_poitions_for_walkers` function return the correct shape?"""
         start_values=np.array([1.0, 2.0, 3.0])
         stds=np.array([1.0, 1.0, 10.0])
+        bounds=np.array([[-100, 100], [-100, 100], [-100, 100]])
         nwalkers=100
 
-        ball=SF.get_starting_poitions_for_walkers(start_values, stds, nwalkers)
-        self.assertEqual(ball.shape, (len(start_values), nwalkers))
+        ball=SF.get_starting_poitions_for_walkers(start_values, stds, nwalkers, bounds)
+        self.assertEqual(ball.shape, (nwalkers, len(start_values)))
 
-        ball=SF.get_starting_poitions_for_walkers(start_values, stds, nwalkers/2)
-        self.assertNotEqual(ball.shape, (len(start_values), nwalkers))
+        ball=SF.get_starting_poitions_for_walkers(start_values, stds, nwalkers/2, bounds)
+        self.assertNotEqual(ball.shape, (nwalkers, len(start_values)))
 
     def test_randomness_of_starting_positions_for_walkers(self):
 
         """Does the `get_starting_poitions_for_walkers` function return random positions around the correct values?"""
+        bounds=np.array([[-100, 100], [-100, 100], [-100, 100] ])
         start_values=np.array([1.0, 2.0, 3.0])
         stds=np.array([1.0, 5.0, 10.0])
+        bounds=np.array([[-100, 100], [-100, 100], [-100, 100]])
         #Big number here to avoid issues with randomness
         nwalkers=10000
 
-        ball=SF.get_starting_poitions_for_walkers(start_values, stds, nwalkers)
+        ball=SF.get_starting_poitions_for_walkers(start_values, stds, nwalkers, bounds)
         self.assertTrue(len(np.unique(ball))==ball.size)
 
         #We've set up starting values in order of size
         #so check this
-        means=np.mean(ball, axis=1)
-        spreads=np.std(ball, axis=1)
+        means=np.mean(ball, axis=0)
+        spreads=np.std(ball, axis=0)
         self.assertTrue(np.allclose(np.round(np.abs(means-start_values)), 0))
         self.assertTrue(np.allclose(np.round(np.abs(spreads-stds)), 0))
+
+    def test_bounds_checking_for_walkers(self):
+
+        """Does the `get_starting_poitions_for_walkers` function correctly clip the random numbers to be between the bounds values?"""
+        
+        start_values=np.array([1.0, 2.0, 3.0])
+        stds=np.array([1.0, 5.0, 10.0])
+        bounds=np.array([[-1.0, 1.0], [-1.0, 1.0], [-1.0, 1.0] ])
+        nwalkers=100
+
+        ball=SF.get_starting_poitions_for_walkers(start_values, stds, nwalkers, bounds)
+        self.assertTrue(np.all((ball.T>bounds[:, 0, None])&(ball.T<bounds[:, 1, None])))
 
 
 
