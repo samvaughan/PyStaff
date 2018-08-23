@@ -889,9 +889,9 @@ def emline(logLam_temp, line_wave, FWHM_gal):
 #       MC, Oxford, 10 August 2016
 #   V1.2.1: Allow FWHM_gal to be a function of wavelength. MC, Oxford, 16 August 2016
 
-def emission_lines(logLam_temp, lamRange_gal, FWHM_gal, quiet=True):
+def emission_lines(logLam_temp, lamRange_gal, FWHM_gal, vac_or_air='air', quiet=True):
     """
-    **From Michele Cappellari's PPXF code**
+    **EDITED From Michele Cappellari's PPXF code**
     Generates an array of Gaussian emission lines to be used as gas templates in PPXF.
     These templates represent the instrumental line spread function (LSF) at the
     set of wavelengths of each emission line.
@@ -915,16 +915,26 @@ def emission_lines(logLam_temp, lamRange_gal, FWHM_gal, quiet=True):
     :param FWHM_gal: is the instrumantal FWHM of the galaxy spectrum under study
         in Angstrom. One can pass either a scalar or the name "func" of a function
         func(wave) which returns the FWHM for a given vector of input wavelengths.
+    :param vac_or_air: String either 'vac' or 'air', giving emission lines in 
+        air or vacuum wavelengths
     :return: emission_lines, line_names, line_wave
 
     """
+
+
+    assert vac_or_air =='vac' or vac_or_air =='air', 'vac_or_air variable must be one of "vac" or "air"'
+
     # Balmer Series:      Hdelta   Hgamma    Hbeta   Halpha
     line_wave = np.array([4101.76, 4340.47, 4861.33, 6562.80])  # air wavelengths
+    if vac_or_air =='vac':
+        line_wave=vac_to_air(line_wave)
     line_names = np.array(['Hdelta', 'Hgamma', 'Hbeta', 'Halpha'])
     emission_lines = emline(logLam_temp, line_wave, FWHM_gal)
 
     #                 -----[OII]-----    -----[SII]-----
     lines = np.array([3726.03, 3728.82, 6716.47, 6730.85])  # air wavelengths
+    if vac_or_air =='vac':
+        lines=vac_to_air(lines)
     names = np.array(['[OII]3726', '[OII]3729', '[SII]6716', '[SII]6731'])
     gauss = emline(logLam_temp, lines, FWHM_gal)
     emission_lines = np.append(emission_lines, gauss, 1)
@@ -934,6 +944,8 @@ def emission_lines(logLam_temp, lamRange_gal, FWHM_gal, quiet=True):
     # To keep the flux ratio of a doublet fixed, we place the two lines in a single template
     #                 -----[OIII]-----
     lines = np.array([4958.92, 5006.84])    # air wavelengths
+    if vac_or_air =='vac':
+        lines=vac_to_air(lines)
     doublet = 0.33*emline(logLam_temp, lines[0], FWHM_gal) + emline(logLam_temp, lines[1], FWHM_gal)
     emission_lines = np.append(emission_lines, doublet, 1)
     line_names = np.append(line_names, '[OIII]5007d') # single template for this doublet
@@ -942,6 +954,8 @@ def emission_lines(logLam_temp, lamRange_gal, FWHM_gal, quiet=True):
     # To keep the flux ratio of a doublet fixed, we place the two lines in a single template
     #                  -----[OI]-----
     lines = np.array([6300.30, 6363.67])    # air wavelengths
+    if vac_or_air =='vac':
+        lines=vac_to_air(lines)
     doublet = emline(logLam_temp, lines[0], FWHM_gal) + 0.33*emline(logLam_temp, lines[1], FWHM_gal)
     emission_lines = np.append(emission_lines, doublet, 1)
     line_names = np.append(line_names, '[OI]6300d') # single template for this doublet
@@ -950,6 +964,8 @@ def emission_lines(logLam_temp, lamRange_gal, FWHM_gal, quiet=True):
     # To keep the flux ratio of a doublet fixed, we place the two lines in a single template
     #                 -----[NII]-----
     lines = np.array([6548.03, 6583.41])    # air wavelengths
+    if vac_or_air =='vac':
+        lines=vac_to_air(lines)
     doublet = 0.33*emline(logLam_temp, lines[0], FWHM_gal) + emline(logLam_temp, lines[1], FWHM_gal)
     emission_lines = np.append(emission_lines, doublet, 1)
     line_names = np.append(line_names, '[NII]6583d') # single template for this doublet
@@ -971,6 +987,51 @@ def emission_lines(logLam_temp, lamRange_gal, FWHM_gal, quiet=True):
 
 ###############################################################################
 
+
+#From Michele Cappellari's pPXF code
+
+
+def _wave_convert(lam):
+    """
+    Convert between vacuum and air wavelengths using
+    equation (1) of Ciddor 1996, Applied Optics 35, 1566
+        http://dx.doi.org/10.1364/AO.35.001566
+
+    :param lam - Wavelength in Angstroms
+    :return: conversion factor
+
+    """
+    lam = np.asarray(lam)
+    sigma2 = (1e4/lam)**2
+    fact = 1 + 5.792105e-2/(238.0185 - sigma2) + 1.67917e-3/(57.362 - sigma2)
+
+    return fact
+
+###############################################################################
+
+def vac_to_air(lam_vac):
+    """
+    Convert vacuum to air wavelengths
+
+    :param lam_vac - Wavelength in Angstroms
+    :return: lam_air - Wavelength in Angstroms
+
+    """
+    return lam_vac/_wave_convert(lam_vac)
+
+###############################################################################
+
+def air_to_vac(lam_air):
+    """
+    Convert air to vacuum wavelengths
+
+    :param lam_air - Wavelength in Angstroms
+    :return: lam_vac - Wavelength in Angstroms
+
+    """
+    return lam_air*_wave_convert(lam_air)
+
+###############################################################################
 
 ###############################################################################
 #

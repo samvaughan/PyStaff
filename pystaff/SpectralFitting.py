@@ -25,7 +25,7 @@ class SpectralFit(object):
     c_light=const.c/1000.0
 
 
-    def __init__(self, lamdas, flux, noise, pixel_weights, fit_wavelengths, FWHM_gal, skyspecs=None, element_imf='kroupa', instrumental_resolution=None):
+    def __init__(self, lamdas, flux, noise, pixel_weights, fit_wavelengths, FWHM_gal, skyspecs=None, element_imf='kroupa', instrumental_resolution=None, vac_or_air='vac'):
 
         if not np.unique(np.array([flux.size, lamdas.size, noise.size])).size == 1:
             raise ValueError('LAMDAS, FLUX and NOISE must be the same length!')
@@ -54,6 +54,7 @@ class SpectralFit(object):
         self.element_imf=element_imf
         self.FWHM_gal=FWHM_gal
         self.instrumental_resolution=instrumental_resolution
+        self.vac_or_air=vac_or_air
 
 
     def set_up_fit(self):
@@ -79,7 +80,7 @@ class SpectralFit(object):
         #Prepare the interpolators
         self.prepare_CVD2_interpolators()
 
-        self.get_emission_lines()
+        self.get_emission_lines(self.vac_or_air)
 
         self.dv = SpectralFit.c_light*np.log(self.lam_range_temp[0]/self.lam_range_gal[0])
 
@@ -124,9 +125,9 @@ class SpectralFit(object):
         self.linear_interp, self.logLam_template =CvDTools.prepare_CvD_interpolator_twopartIMF(self.lam_range_temp, self.velscale, verbose=True)
         self.correction_interps, self.log_lam_template=CvDTools.prepare_CvD_correction_interpolators(self.lam_range_temp, self.velscale, self.elements_to_fit, verbose=True, element_imf=self.element_imf)
 
-    def get_emission_lines(self):
+    def get_emission_lines(self, vac_or_air='air'):
 
-        self.emission_lines, self.line_names, self.line_wave=SF.emission_lines(self.log_lam_template, self.lam_range_gal, self.FWHM_gal, quiet=False)
+        self.emission_lines, self.line_names, self.line_wave=SF.emission_lines(self.log_lam_template, self.lam_range_gal, self.FWHM_gal, vac_or_air=vac_or_air, quiet=False)
         
 
     def likelihood(self, theta):
