@@ -48,7 +48,7 @@ def rebin_spectrum(lamdas, flux, errors, pixel_weights, instrumental_resolution=
     
 
     lam_range_gal=np.array([lower, upper])
-    mask=np.where((lamdas>lower) & (lamdas<upper))
+    mask=np.where((lamdas>=lower) & (lamdas<=upper))
 
     flux=flux[mask]
     errors=errors[mask]
