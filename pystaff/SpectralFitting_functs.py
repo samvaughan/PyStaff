@@ -44,8 +44,7 @@ def rebin_spectrum(lamdas, flux, errors, pixel_weights, instrumental_resolution=
     upper=lamdas.max()
 
     assert (lower>=lamdas.min()) & (upper<=lamdas.max()), 'Lower and upper limits must be within the wavelength ranges of the data'
-
-    
+   
 
     lam_range_gal=np.array([lower, upper])
     mask=np.where((lamdas>=lower) & (lamdas<=upper))
@@ -133,7 +132,7 @@ def get_start_vals_and_bounds(theta):
 
 
 
-def get_starting_poitions_for_walkers(start_values, stds, nwalkers, bounds):
+def get_starting_positions_for_walkers(start_values, stds, nwalkers, bounds):
 
     """
     Given a set of N starting values and sigmas for each value, make a set of random starting positions for M walkers. This is accomplished by 
@@ -143,6 +142,7 @@ def get_starting_poitions_for_walkers(start_values, stds, nwalkers, bounds):
         start_values (array): A 1D array of starting values for each parameter.
         stds: (array): A 1D array of standard deviations, corresponding to the spread around the start value for each parameter
         nwakers: (int): The number of walkers we'll use.
+        bounds (array): 
     Returns:
         (array): An (N_walkers x N_parameters) array of starting positions.
     """
@@ -690,6 +690,7 @@ def lnlike(theta, parameters, plot=False, ret_specs=False):
         #Fit the polynomials, weighting by the noise and ignoring pixels with 0 weight
         poly_weights=1.0/n**2
         poly_weights[~ws]=0.0
+        poly_weights[~np.isfinite(poly_weights)]=0.0
         poly=_fit_legendre_polys((g-sky)/(t+gas), morder, weights=poly_weights)
 
         #Scale the noise by some fraction ln_f
@@ -743,7 +744,7 @@ def lnlike(theta, parameters, plot=False, ret_specs=False):
 
 
     #Log likelihood- chisqaured plus sum of errors, which now depend on ln_f
-    likelihood=-0.5*(chisq) - 0.5*np.sum(np.log(e**2)*w)
+    likelihood=-0.5*(chisq) - 0.5*np.sum(np.log(2*np.pi*e**2)*w)
 
 
     if ret_specs:
