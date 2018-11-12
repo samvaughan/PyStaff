@@ -691,18 +691,18 @@ def lnlike(theta, parameters, plot=False, ret_specs=False):
         poly_weights=1.0/n**2
         poly_weights[~ws]=0.0
         poly_weights[~np.isfinite(poly_weights)]=0.0
-        poly=_fit_legendre_polys((g-sky)/(t+gas), morder, weights=poly_weights)
+        poly=_fit_legendre_polys((g-sky - gas)/(t), morder, weights=poly_weights)
 
         #Scale the noise by some fraction ln_f
         n_corrected=np.sqrt((1+np.exp(2*ln_f))*n**2)         
 
         #Calculate the chi_squared
-        chisqs[gmask]=(((g - sky - poly*gas -t*poly)/n_corrected)**2)
+        chisqs[gmask]=(((g - sky - gas -t*poly)/n_corrected)**2)
 
         
         lams.append(np.exp(logLam_gal[gmask]))
         temps.append(poly*t)
-        gas_lines.append(poly*gas)
+        gas_lines.append(gas)
         residuals.append(g - sky - poly*gas-poly*t)
         errors.append(n_corrected)
         specs.append(g - sky)
