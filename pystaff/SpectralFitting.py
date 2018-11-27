@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import numpy as np 
 import scipy.constants as const
+from ppxf import ppxf_util as P
 
 #Relative imports are such a headache
 try:
@@ -12,11 +13,6 @@ try:
 except ValueError:
     import SpectralFitting_functs as SF
     import CvD_SSP_tools as CvDTools
-
-
-#ToDo:
-
-#Mask emission lines from polynomial fit
 
 
 
@@ -127,7 +123,7 @@ class SpectralFit(object):
 
     def get_emission_lines(self, vac_or_air='air'):
 
-        self.emission_lines, self.line_names, self.line_wave=SF.emission_lines(self.log_lam_template, self.lam_range_gal, self.FWHM_gal, vac_or_air=vac_or_air, quiet=False)
+        self.emission_lines, self.line_names, self.line_wave=P.emission_lines(self.log_lam_template, self.lam_range_gal, self.FWHM_gal, vac_or_air=vac_or_air, quiet=False)
         
 
     def likelihood(self, theta):
