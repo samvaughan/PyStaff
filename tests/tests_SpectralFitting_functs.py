@@ -22,7 +22,7 @@ class SpectralFitting_functs_isolatedfunctions_TestCase(unittest.TestCase):
         ball=SF.get_starting_positions_for_walkers(start_values, stds, nwalkers, bounds)
         self.assertEqual(ball.shape, (nwalkers, len(start_values)))
 
-        ball=SF.get_starting_positions_for_walkers(start_values, stds, nwalkers/2, bounds)
+        ball=SF.get_starting_positions_for_walkers(start_values, stds, int(nwalkers/2), bounds)
         self.assertNotEqual(ball.shape, (nwalkers, len(start_values)))
 
     def test_randomness_of_starting_positions_for_walkers(self):
