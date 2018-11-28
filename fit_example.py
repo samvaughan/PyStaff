@@ -175,8 +175,8 @@ SF.plot_fit(theta, fit.fit_settings)
 
 ###################################################################################################
 #Set up the initial positions of the walkers as a ball with a different standard deviation in each dimension
-nwalkers=200
-nsteps=10000
+nwalkers=70
+nsteps=100
 
 
 #Get the spread of the starting positions
@@ -210,7 +210,7 @@ assert len(stds)==len(variables), "You must have the same number of dimensions f
 
 #Now get the starting values for each parameter, as well as the prior bounds
 start_values, bounds=SF.get_start_vals_and_bounds(theta)
-p0=SF.get_starting_poitions_for_walkers(start_values, stds, nwalkers, bounds)
+p0=SF.get_starting_positions_for_walkers(start_values, stds, nwalkers, bounds)
 ###################################################################################################
 
 
