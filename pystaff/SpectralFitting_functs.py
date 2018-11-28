@@ -1,6 +1,5 @@
 import numpy as np 
 import scipy.constants as const
-
 from scipy import special
 import scipy.interpolate as si
 import collections
