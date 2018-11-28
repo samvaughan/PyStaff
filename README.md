@@ -28,7 +28,7 @@ The code is being actively documented and updated.
 
 ## Acknowledgements
 
-A number of functions are imported from Michele Cappellari's fantastic Penalized Pixel Fitting code (pPXF: [here](http://www-astro.physics.ox.ac.uk/~mxc/software/), available from PyPI). I'd also like to thank Charlie Conroy for making available the latest version of the SSP models. 
+A number of functions are imported from Michele Cappellari's fantastic Penalized Pixel Fitting code (pPXF: more info [here](http://www-astro.physics.ox.ac.uk/~mxc/software/), and available from PyPI). I'd also like to thank Charlie Conroy for making available the latest version of the SSP models. 
 
 ## Dependencies
 
