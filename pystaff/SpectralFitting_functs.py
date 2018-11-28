@@ -405,7 +405,7 @@ def get_best_fit_template(theta, parameters, convolve=True):
 
 
     if convolve:
-        template=convolve_template_with_losvd(template, vel, sigma, velscale=velscale, vsyst=vsyst)[:len(galaxy)]
+        template=P.convolve_gauss_hermite(template, velscale=velscale, start=[vel, sigma], npix=len(galaxy), vsyst=vsyst).squeeze()
         logLams=logLam_gal.copy()
 
     return logLams, template, base_template
@@ -614,7 +614,7 @@ def lnlike(theta, parameters, plot=False, ret_specs=False):
     #Make the emission lines:
     if emission_lines is not None:
         unconvolved_em_lines=Hbeta_flux*emission_lines[:, 0] + Ha_flux*emission_lines[:, 1] + SII_6716*emission_lines[:, 2] + SII_6731*emission_lines[:, 3] + OIII * emission_lines[:, 4] + OI*emission_lines[:, 5] + NII*emission_lines[:, 6]
-        convolved_em_lines=convolve_template_with_losvd(unconvolved_em_lines, vel_gas, sig_gas, velscale=velscale, vsyst=vsyst)[:len(galaxy)]
+        convolved_em_lines=P.convolve_gauss_hermite(unconvolved_em_lines, velscale=velscale, start=[vel_gas, sig_gas], npix=len(galaxy), vsyst=vsyst).squeeze()
     else:
         convolved_em_lines=np.zeros_like(galaxy)
 
@@ -777,62 +777,5 @@ def init(func, *args, **kwargs):
     
     global parameters, logLam
     parameters, logLam, ndim=func(*args, **kwargs)
-
-
-
-
-
-
-def convolve_template_with_losvd(template, vel=0.0, sigma=0.0, velscale=None, vsyst=0.0):
-
-    """
-    **From Michele Cappellari's PPXF code**
-
-    Given a template, convolve it with a line-of-sight velocity distribution. 
-    
-    """
-
-    t_rfft, npad=_templates_rfft(template)
-    losvd_rfft=_losvd_rfft(vel, sigma, npad, velscale, npad, vsyst=vsyst)
-
-    convolved_t=np.fft.irfft(t_rfft*losvd_rfft)
-
-    return convolved_t
-
-
-def _losvd_rfft(vel, sig, pad, velscale, npad, vsyst=0.0):
-
-    """
-    **From Michele Cappellari's PPXF code**
-    """
-
-
-    nl = npad//2 + 1
-
-    vel=(vel+vsyst)/velscale
-    sig/=velscale
-
-
-
-    a, b = np.array([vel, 0.0])/sig
-
-    w = np.linspace(0, np.pi*sig, nl)
-    #analytic FFT of LOSVD
-    losvd_rfft = np.exp(1j*a*w - 0.5*(1 + b**2)*w**2)
-
-    return np.conj(losvd_rfft)
-
-    
-
-def _templates_rfft(templates):
-    """
-    **From Michele Cappellari's PPXF code**
-    Pre-compute the FFT (of real input) of all templates
-
-    """
-    npad = 2**int(np.ceil(np.log2(templates.shape[0])))
-    templates_rfft = np.fft.rfft(templates, n=npad, axis=0)
-
-    return templates_rfft, npad
 
 

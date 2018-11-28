@@ -4,13 +4,14 @@ import scipy.constants as const
 from astropy.io import fits
 import scipy.interpolate as si
 import glob
-from . import SpectralFitting_functs as SF
+from ppxf import ppxf_util as P
 
 class Spectrum(object):
     """
 
     UPDATE THE DOCSTRING! A stripped down version of specTools in order to package this all together nicely
-    Author: Ryan Houghton (20/4/11)
+    Original Author: Ryan Houghton (20/4/11)
+    Updated: Sam Vaughan (Early 2018)
 
     Purpose: A spectrum object to aid manipulation of wavelength/frequency and the associated
              flux values
@@ -345,7 +346,7 @@ def prepare_CvD2_templates_twopartIMF(templates_lam_range, velscale, verbose=Tru
     interp=si.interp1d(x, y, fill_value='extrapolate')
     out=interp(new_x)
 
-    sspNew, logLam_template, template_velscale = SF.log_rebin(templates_lam_range, out, velscale=velscale)
+    sspNew, logLam_template, template_velscale = P.log_rebin(templates_lam_range, out, velscale=velscale)
     templates=np.empty((len(sspNew), n_ages, n_zs, len(imfs_X1), len(imfs_X2)))
 
     #Resolution of the templates in km/s
@@ -370,7 +371,7 @@ def prepare_CvD2_templates_twopartIMF(templates_lam_range, velscale, verbose=Tru
                     out=interp(new_x)
 
                     #log rebin them
-                    sspNew, logLam_template, template_velscale = SF.log_rebin(templates_lam_range, out, velscale=velscale)                
+                    sspNew, logLam_template, template_velscale = P.log_rebin(templates_lam_range, out, velscale=velscale)                
 
                     templates[:, b, a, c, d]=sspNew#/np.median(sspNew)
 
@@ -482,7 +483,7 @@ def prepare_CvD2_element_templates(templates_lam_range, velscale, elements, verb
     data=interp(new_x)
 
 
-    sspNew, logLam_template, template_velscale = SF.log_rebin(templates_lam_range, data, velscale=velscale)
+    sspNew, logLam_template, template_velscale = P.log_rebin(templates_lam_range, data, velscale=velscale)
 
     print('SSP New is {}'.format(len(sspNew)))
 
@@ -516,7 +517,7 @@ def prepare_CvD2_element_templates(templates_lam_range, velscale, elements, verb
 
                     #data=util.gaussian_filter1d(data, sigs/velscale)
                             
-                    sspNew, logLam_template, template_velscale = SF.log_rebin(templates_lam_range, data, velscale=velscale)
+                    sspNew, logLam_template, template_velscale = P.log_rebin(templates_lam_range, data, velscale=velscale)
 
                     positive_only_templates[a, b, c, d, :]=sspNew#/np.median(sspNew)
 
@@ -552,7 +553,7 @@ def prepare_CvD2_element_templates(templates_lam_range, velscale, elements, verb
 
                     #data=util.gaussian_filter1d(data, sigs/velscale)
 
-                    sspNew, logLam_template, template_velscale = SF.log_rebin(templates_lam_range, data, velscale=velscale)
+                    sspNew, logLam_template, template_velscale = P.log_rebin(templates_lam_range, data, velscale=velscale)
 
                     general_templates[a, b, c, d, :]=sspNew#/np.median(sspNew)
 
@@ -611,7 +612,7 @@ def prepare_CvD2_element_templates(templates_lam_range, velscale, elements, verb
 
 
                     
-                sspNew, logLam_template, template_velscale = SF.log_rebin(templates_lam_range, data, velscale=velscale)
+                sspNew, logLam_template, template_velscale = P.log_rebin(templates_lam_range, data, velscale=velscale)
                 na_templates[a, b, c, :]=sspNew
 
 
@@ -653,7 +654,7 @@ def prepare_CvD2_element_templates(templates_lam_range, velscale, elements, verb
 
 
                     
-                sspNew, logLam_template, template_velscale = SF.log_rebin(templates_lam_range, data, velscale=velscale)
+                sspNew, logLam_template, template_velscale = P.log_rebin(templates_lam_range, data, velscale=velscale)
                 T_templates[a, b, c, :]=sspNew
 
     #np.save('/home/vaughan/Desktop/general_template_{}.npy'.format(element_imf), general_templates)

@@ -123,7 +123,12 @@ class SpectralFit(object):
 
     def get_emission_lines(self, vac_or_air='air'):
 
-        self.emission_lines, self.line_names, self.line_wave=P.emission_lines(self.log_lam_template, self.lam_range_gal, self.FWHM_gal, vac_or_air=vac_or_air, quiet=False)
+        if vac_or_air=='vac':
+            vacuum=True
+        else:
+            vacuum=False
+
+        self.emission_lines, self.line_names, self.line_wave=P.emission_lines(self.log_lam_template, self.lam_range_gal, self.FWHM_gal, vacuum=vacuum)
         
 
     def likelihood(self, theta):
