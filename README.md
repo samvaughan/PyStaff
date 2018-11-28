@@ -28,4 +28,12 @@ The code is being actively documented and updated.
 
 ## Acknowledgements
 
-A number of functions have been taken from Michele Cappellari's fantastic Penalized Pixel Fitting code (pPXF: available [here](http://www-astro.physics.ox.ac.uk/~mxc/software/)). I'd also like to thank Charlie Conroy for making available the latest version of the SSP models. 
+A number of functions are imported from Michele Cappellari's fantastic Penalized Pixel Fitting code (pPXF: [here](http://www-astro.physics.ox.ac.uk/~mxc/software/), available from PyPI). I'd also like to thank Charlie Conroy for making available the latest version of the SSP models. 
+
+## Dependencies
+
+* Python 3
+* Standard scientific python stack (numpy, scipy, matplotlib, astropy)
+* pPXF- 'pip install ppxf'
+
+You can also run `pip install -r requirements.txt`
