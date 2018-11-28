@@ -44,7 +44,7 @@ element_imf='kroupa'
 
 ####################################################
 #Read in the data
-datafile='data/example_spectrum.txt'
+datafile='data/example_spectrum2.txt'
 
 lamdas, flux, errors, instrumental_resolution=np.genfromtxt(datafile, unpack=True)
 
@@ -86,9 +86,9 @@ pixel_weights[~pixel_mask]=0.0
 fit_wavelengths=np.array([[4750, 5600], [5600, 6800], [6800, 8000], [8000,  9200]])
 string_fit_wavelengths=["{} to {}".format(pair[0], pair[1]) for pair in fit_wavelengths]
 
-#FWHM. Should make a way to measure this!
+#FWHM.
 #This should be the FWHM in pixels of the instrument used to observe the spectrum.
-FWHM_gal=1.0
+FWHM_gal=3.0
 
 #Now set up the spectral fitting class
 print('Setting up the fit')
@@ -101,7 +101,7 @@ fit.set_up_fit()
 #The min and max values act as flat priors
 theta=LM.Parameters()
 #LOSVD parameters
-theta.add('Vel', value=1800, min=-1000.0, max=10000.0)
+theta.add('Vel', value=1600, min=-1000.0, max=10000.0)
 theta.add('sigma', value=330.0, min=10.0, max=500.0)
 
 #Abundance of Na. Treat this separately, since it can vary up to +1.0 dex
@@ -131,16 +131,16 @@ theta.add('Cu', value=0.0, min=0.0, max=0.45, vary=False)
 
 #Emission line kinematics
 #Each line is fixed to the same velocity and sigma
-theta.add('Vel_em', value=1800, min=0.0, max=10000)
+theta.add('Vel_em', value=1600, min=0.0, max=10000)
 theta.add('sig_em', value=200.0, min=10.0, max=500.0)
 
 #Emission line strengths
 #These are log flux- they get exponentiated in the likelihood function
-theta.add('Ha', value=-1.5, min=-10.0, max=10.0)
-theta.add('Hb', value=-2.0, min=-10.0, max=10.0)
-theta.add('NII', value=-1.0, min=-10.0, max=10.0)
-theta.add('SII_6716', value=-2.0, min=-10.0, max=10.0)
-theta.add('SII_6731', value=-2.0, min=-10.0, max=10.0)
+theta.add('Ha', value=1.0, min=-10.0, max=10.0)
+theta.add('Hb', value=0.3, min=-10.0, max=10.0)
+theta.add('NII', value=0.5, min=-10.0, max=10.0)
+theta.add('SII_6716', value=0.5, min=-10.0, max=10.0)
+theta.add('SII_6731', value=0.5, min=-10.0, max=10.0)
 theta.add('OIII', value=-2.0, min=-10.0, max=10.0)
 theta.add('OI', value=-2.0, min=-10.0, max=10.0)
 
