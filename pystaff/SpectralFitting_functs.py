@@ -243,8 +243,8 @@ def plot_fit(theta, parameters, fig=None, axs=None, color='b'):
 
     #galaxy, noise, all_sky, weights, velscale, goodpixels, vsyst, interp_funct, correction_interps, logLams, logLam_gal, fit_wavelengths=parameters
     #Unpack the parameters we need
-    fit_wavelengths=parameters['fit_wavelengths']
-    c_light=parameters['c_light']
+    fit_wavelengths = parameters['fit_wavelengths']
+    c_light = parameters['c_light']
     vel = theta['Vel'].value
 
     import matplotlib.pyplot as plt 

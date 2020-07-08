@@ -198,7 +198,7 @@ def load_varelem_CvD16ssps(varelem_template_location, imf='kroupa', verbose=True
 
 
     import os
-    dirname=os.path.expanduser(dirname)
+    varelem_template_location=os.path.expanduser(varelem_template_location)
 
     if imf in ['kroupa', 'krpa', 'Kroupa', 'Krpa']:
         model_spectra=sorted(glob.glob('{}/atlas_ssp_*.krpa.s100'.format(varelem_template_location)))
