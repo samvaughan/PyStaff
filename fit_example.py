@@ -44,13 +44,13 @@ element_imf='kroupa'
 
 ####################################################
 #Read in the data
-datafile='data/example_spectrum2.txt'
+datafile = 'spectra/UGC10738_r3_5_z0.0_0.5.dat'
 
-lamdas, flux, errors, instrumental_resolution=np.genfromtxt(datafile, unpack=True)
+lamdas, flux, errors, _ = np.genfromtxt(datafile, unpack=True)
 
 # The instrumental resolution can be included if it's known. We need a value of sigma_inst in km/s for every pixel
 # Otherwise leave it as None
-#instrumental_resolution=None
+instrumental_resolution=None
 
 # Sky Spectra
 # Give a list of 1D sky spectra to be scaled and subtracted during the fit

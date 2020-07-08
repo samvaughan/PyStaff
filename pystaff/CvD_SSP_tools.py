@@ -172,7 +172,7 @@ def singleOrList2Array(invar):
     # return
     return rval
 
-def load_varelem_CvD16ssps(dirname='/Data/stellarpops/CvD2', folder='atlas_rfn_v3', imf='kroupa', verbose=True):
+def load_varelem_CvD16ssps(varelem_template_location, imf='kroupa', verbose=True):
 
     '''
     Load the CvD16 spectra (response functions) with variable elemental abundances. 
@@ -201,10 +201,10 @@ def load_varelem_CvD16ssps(dirname='/Data/stellarpops/CvD2', folder='atlas_rfn_v
     dirname=os.path.expanduser(dirname)
 
     if imf in ['kroupa', 'krpa', 'Kroupa', 'Krpa']:
-        model_spectra=sorted(glob.glob('{}/{}/atlas_ssp_*.krpa.s100'.format(dirname, folder)))
+        model_spectra=sorted(glob.glob('{}/atlas_ssp_*.krpa.s100'.format(varelem_template_location)))
         imf_name='krpa'
     elif imf in ['Salpeter', 'salpeter', 'salp', 'Salp']:
-        model_spectra=sorted(glob.glob('{}/{}/atlas_ssp_*.salp.s100'.format(dirname, folder)))
+        model_spectra=sorted(glob.glob('{}/atlas_ssp_*.salp.s100'.format(varelem_template_location)))
         imf_name='salp'
     else:
         raise NameError('IMF type not understood')
@@ -234,7 +234,7 @@ def load_varelem_CvD16ssps(dirname='/Data/stellarpops/CvD2', folder='atlas_rfn_v
 
 
             
-            model=glob.glob('{}/{}/atlas_ssp*t{}*{}*{}.s100'.format(dirname, folder, age, Z, imf_name))[0]
+            model=glob.glob('{}/atlas_ssp*t{}*{}*{}.s100'.format(varelem_template_location, age, Z, imf_name))[0]
             if verbose:
                 print('Loading {}'.format(model))
             data=np.genfromtxt(model)
@@ -259,7 +259,7 @@ def load_varelem_CvD16ssps(dirname='/Data/stellarpops/CvD2', folder='atlas_rfn_v
 
 
 ################################################################################################################################################################
-def prepare_CvD_interpolator_twopartIMF(templates_lam_range, velscale, verbose=True):
+def prepare_CvD_interpolator_twopartIMF(base_template_location, templates_lam_range, velscale, verbose=True):
     """
     Set up the interpolator for the base SSP spectra using the log-rebinned templates we get from `prepare_CvD2_templates_twopartIMF`.
 
@@ -274,7 +274,7 @@ def prepare_CvD_interpolator_twopartIMF(templates_lam_range, velscale, verbose=T
             * interp: the interpolate object. Axes are wavelength, age, Z, imf_x1 and imf_x2
             * logLam_template: the log-rebinned wavelength array of the templates
     """
-    templates, logLam_template=prepare_CvD2_templates_twopartIMF(templates_lam_range, velscale, verbose=verbose)
+    templates, logLam_template=prepare_CvD2_templates_twopartIMF(base_template_location, templates_lam_range, velscale, verbose=verbose)
 
     nimfs=16
     ages=[  1.,   3.,   5.,  7., 9.,  11.0, 13.5]
@@ -290,7 +290,7 @@ def prepare_CvD_interpolator_twopartIMF(templates_lam_range, velscale, verbose=T
 
 ################################################################################################################################################################
 
-def prepare_CvD2_templates_twopartIMF(templates_lam_range, velscale, verbose=True):
+def prepare_CvD2_templates_twopartIMF(template_location, templates_lam_range, velscale, verbose=True):
 
     '''
     Load the CvD16 base spectra, those that vary age, [Z/H] and the IMF. The templates are log-rebinned to have a uniform wavelength
@@ -316,7 +316,7 @@ def prepare_CvD2_templates_twopartIMF(templates_lam_range, velscale, verbose=Tru
 
     import glob
     import os
-    template_glob=os.path.expanduser('~/z/Data/stellarpops/CvD2/vcj_twopartimf/vcj_ssp_v8/VCJ_v8_mcut0.08_t*')
+    template_glob=os.path.expanduser(f'{template_location}/VCJ_v8_mcut0.08_t*')
 
     vcj_models=sorted(glob.glob(template_glob))
     models=np.genfromtxt(vcj_models[-1])
@@ -353,7 +353,7 @@ def prepare_CvD2_templates_twopartIMF(templates_lam_range, velscale, verbose=Tru
 
     for a, Z in enumerate(Zs):    
         for b, age in enumerate(ages):
-            model=glob.glob(os.path.expanduser('~/z/Data/stellarpops/CvD2/vcj_twopartimf/vcj_ssp_v8/VCJ_v8_mcut0.08_t{}*{}.ssp.imf_varydoublex.s100'.format(age, Z)))[0]
+            model=glob.glob(os.path.expanduser(f'{template_location}/VCJ_v8_mcut0.08_t{age}*{Z}.ssp.imf_varydoublex.s100'))[0]
             print('Loading {}'.format(model))
             data=np.genfromtxt(model)
 
@@ -381,7 +381,7 @@ def prepare_CvD2_templates_twopartIMF(templates_lam_range, velscale, verbose=Tru
 
 
 ################################################################################################################################################################
-def prepare_CvD_correction_interpolators(templates_lam_range, velscale, elements, verbose=True, element_imf='kroupa'):
+def prepare_CvD_correction_interpolators(varelem_template_location, templates_lam_range, velscale, elements, verbose=True, element_imf='kroupa'):
 
     """
     Set up the interpolator for the response functions using the log-rebinned templates we get from `prepare_CvD2_element_templates`.
@@ -405,7 +405,7 @@ def prepare_CvD_correction_interpolators(templates_lam_range, velscale, elements
             * logLam_template: The log-rebinned wavelength array of the templates
     """
 
-    all_corrections, logLam_template=prepare_CvD2_element_templates(templates_lam_range, velscale, elements, verbose=verbose, element_imf=element_imf)
+    all_corrections, logLam_template=prepare_CvD2_element_templates(varelem_template_location, templates_lam_range, velscale, elements, verbose=verbose, element_imf=element_imf)
 
     general_templates, na_templates, positive_only_templates, T_templates=all_corrections
 
@@ -447,7 +447,7 @@ def prepare_CvD_correction_interpolators(templates_lam_range, velscale, elements
 
 
 
-def prepare_CvD2_element_templates(templates_lam_range, velscale, elements, verbose=True, element_imf='kroupa'):
+def prepare_CvD2_element_templates(varelem_template_location, templates_lam_range, velscale, elements, verbose=True, element_imf='kroupa'):
 
     
 
@@ -456,7 +456,7 @@ def prepare_CvD2_element_templates(templates_lam_range, velscale, elements, verb
     
     #template_glob=os.path.expanduser('~/z//Data/stellarpops/CvD2/vcj_models/VCJ_*.s100')
 
-    var_elem_spectra=load_varelem_CvD16ssps(dirname=os.path.expanduser('~/z/Data/stellarpops/CvD2'), folder='atlas_rfn_v3', imf=element_imf)
+    var_elem_spectra=load_varelem_CvD16ssps(varelem_template_location, imf=element_imf)
 
     ages=var_elem_spectra['Solar'].age[:, 0]
     Zs=var_elem_spectra['Solar'].Z[0, :]
