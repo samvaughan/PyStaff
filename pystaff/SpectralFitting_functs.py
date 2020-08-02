@@ -42,8 +42,8 @@ def rebin_spectrum(lamdas, flux, errors, pixel_weights, instrumental_resolution=
     assert (lower>=lamdas.min()) & (upper<=lamdas.max()), 'Lower and upper limits must be within the wavelength ranges of the data'
    
 
-    lam_range_gal=np.array([lower, upper])
-    mask=np.where((lamdas>=lower) & (lamdas<=upper))
+    lam_range_gal=np.round(np.array([lower, upper]))
+    mask = (lamdas>=lower) & (lamdas<=upper)
 
     flux=flux[mask]
     errors=errors[mask]
@@ -51,6 +51,7 @@ def rebin_spectrum(lamdas, flux, errors, pixel_weights, instrumental_resolution=
 
     if skyspecs is not None:
         skyspecs=skyspecs[:, mask[0]]
+
 
     if instrumental_resolution is not None:
         instrumental_resolution=instrumental_resolution[mask]
@@ -60,7 +61,6 @@ def rebin_spectrum(lamdas, flux, errors, pixel_weights, instrumental_resolution=
     galaxy, logLam, velscale = P.log_rebin(lam_range_gal, flux)
     noise, _, _=P.log_rebin(lam_range_gal, errors, velscale=velscale) 
     weights, _, _=P.log_rebin(lam_range_gal, pixel_weights, velscale=velscale)
-    #import pdb; pdb.set_trace()
 
     all_sky=None
     if skyspecs is not None:
@@ -377,8 +377,14 @@ def get_best_fit_template(theta, parameters, convolve=True):
     vel =theta['Vel'].value 
     sigma=theta['sigma'].value
     Na_abundance=theta['Na'].value
+
     general_abundances=np.array([theta['Ca'].value, theta['Fe'].value, theta['C'].value, theta['N'].value, theta['Ti'].value, theta['Mg'].value, theta['Si'].value, theta['Ba'].value])  
+
     positive_abundances=np.array([theta['as_Fe'].value, theta['Cr'].value,theta['Mn'].value,theta['Ni'].value,theta['Co'].value, theta['Eu'].value,theta['Sr'].value, theta['K'].value,theta['V'].value,theta['Cu'].value])
+
+    positive_abundance_indices = np.where(positive_abundances>0.0)[0]
+    general_abundance_indices = np.where(general_abundances != 0.0)[0]
+
     age=theta['age'].value
     Z=theta['Z'].value
     imf_x1, imf_x2=theta['imf_x1'].value, theta['imf_x2'].value
@@ -391,13 +397,23 @@ def get_best_fit_template(theta, parameters, convolve=True):
     base_template=_make_model(age, Z, imf_x1, imf_x2, interp_funct, logLams)
 
     #Make the correction for elements which vary >0.0
-    positive_only_correction=_get_correction(positive_only_interp, logLams, np.arange(len(positive_abundances)), positive_abundances, age, Z)
+
+    if positive_abundance_indices.size > 0:
+        positive_only_correction=_get_correction(positive_only_interp, logLams, positive_abundance_indices, positive_abundances, age, Z)
+    else:
+        positive_only_correction = np.zeros_like(base_template)
 
     #Response function for general element corrections
-    general_correction=_get_correction(general_interp, logLams, np.arange(len(general_abundances)), general_abundances, age, Z)   
+    if general_abundance_indices.size > 0:
+        general_correction=_get_correction(general_interp, logLams, general_abundance_indices, general_abundances, age, Z)   
+    else:
+        general_correction = np.zeros_like(base_template)
 
     #Have to treat Na differently
-    na_correction=na_interp((Na_abundance, age, Z, logLams))
+    if Na_abundance != 0.0:
+        na_correction=na_interp((Na_abundance, age, Z, logLams))
+    else:
+        na_correction = np.zeros_like(base_template)
 
     #Add things together- see Appendix of Vaughan+ 2018
     template=np.exp(np.log(base_template)+general_correction+positive_only_correction+na_correction)
@@ -605,11 +621,6 @@ def lnlike(theta, parameters, plot=False, ret_specs=False):
     chisqs=np.zeros_like(galaxy)
 
 
-
-
-
-
-
     #Make the emission lines:
     if emission_lines is not None:
         unconvolved_em_lines=Hbeta_flux*emission_lines[:, 0] + Ha_flux*emission_lines[:, 1] + SII_6716*emission_lines[:, 2] + SII_6731*emission_lines[:, 3] + OIII * emission_lines[:, 4] + OI*emission_lines[:, 5] + NII*emission_lines[:, 6]
@@ -630,6 +641,7 @@ def lnlike(theta, parameters, plot=False, ret_specs=False):
     polys=[]
 
 
+    # ToDo- move this to the templates 
     #Convolve with the instrumental resolution
     if instrumental_resolution is not None:
         temp=P.gaussian_filter1d(temp, instrumental_resolution/velscale)

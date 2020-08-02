@@ -18,10 +18,11 @@ except ValueError:
 
 class SpectralFit(object):
 
+
     c_light=const.c/1000.0
 
 
-    def __init__(self, lamdas, flux, noise, pixel_weights, fit_wavelengths, FWHM_gal, base_template_location, varelem_template_location, skyspecs=None, element_imf='kroupa', instrumental_resolution=None, vac_or_air='vac', ):
+    def __init__(self, lamdas, flux, noise, pixel_weights, fit_wavelengths, FWHM_gal, base_template_location, varelem_template_location, skyspecs=None, element_imf='kroupa', instrumental_resolution=None, vac_or_air='vac', template_pad=100):
 
         if not np.unique(np.array([flux.size, lamdas.size, noise.size])).size == 1:
             raise ValueError('LAMDAS, FLUX and NOISE must be the same length!')
@@ -55,6 +56,9 @@ class SpectralFit(object):
         self.base_template_location = base_template_location
         self.varelem_template_location = varelem_template_location
 
+        # The templates must be longer than the observed spectrum. This template_pad variable defines how many Angstroms this padding is. If the observed spectrum has already been de-redshifted then this padding can be small. 
+        self.template_pad = template_pad
+
 
     def set_up_fit(self):
 
@@ -68,8 +72,8 @@ class SpectralFit(object):
         self.elements_to_fit=(positive_only_elems, Na_elem, normal_elems)
 
         #Make sure we have a small amount of padding, so the templates are slightly longer than the models
-        pad=500.0
-        self.lam_range_temp = np.array([self.lam_range_gal[0]-pad, self.lam_range_gal[1]+pad])
+        pad = self.template_pad
+        self.lam_range_temp = np.round(np.array([self.lam_range_gal[0]-pad, self.lam_range_gal[1]+pad]), 1)
 
         #Clip the lam_range_temp to be between the min and max of the models, just in case it isn't
         if np.any(self.lam_range_temp<3501) or np.any(self.lam_range_temp>24997.58):
