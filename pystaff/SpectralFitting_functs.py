@@ -570,7 +570,6 @@ def lnlike(theta, parameters, plot=False, ret_specs=False):
 
     # # ToDo- move this to the templates
     # #Convolve with the instrumental resolution
-    # import ipdb; ipdb.set_trace()
     # if instrumental_resolution is not None:
     #     temp=P.gaussian_filter1d(temp, instrumental_resolution/velscale)
     #     #Bit hacky
