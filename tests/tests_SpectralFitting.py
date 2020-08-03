@@ -23,7 +23,7 @@ class SpectralFittingTestCase(unittest.TestCase):
         FWHM_gal=2.0
 
         with self.assertRaises(ValueError):
-            fit=SpectralFitting.SpectralFit(lamdas, flux, noise, pixel_weights, fit_wavelengths, FWHM_gal, skyspecs=None, element_imf='kroupa', instrumental_resolution=None)
+            fit=SpectralFitting.SpectralFit(lamdas, flux, noise, pixel_weights, fit_wavelengths, FWHM_gal, skyspecs=None, element_imf='kroupa', instrumental_resolution=None, base_template_location='tmp',varelem_template_location='tmp')
 
     def test_shape_checking(self):
 
@@ -37,7 +37,7 @@ class SpectralFittingTestCase(unittest.TestCase):
         FWHM_gal=2.0
 
         with self.assertRaises(ValueError):
-            fit=SpectralFitting.SpectralFit(lamdas, flux, noise, pixel_weights, fit_wavelengths, FWHM_gal, skyspecs=None, element_imf='kroupa', instrumental_resolution=None)
+            fit=SpectralFitting.SpectralFit(lamdas, flux, noise, pixel_weights, fit_wavelengths, FWHM_gal, skyspecs=None, element_imf='kroupa', instrumental_resolution=None, base_template_location='tmp',varelem_template_location='tmp')
 
     def test_instrumental_resolution_length_checking(self):
 
@@ -53,7 +53,7 @@ class SpectralFittingTestCase(unittest.TestCase):
         instrumental_resolution=np.zeros(1001)
 
         with self.assertRaises(ValueError):
-            fit=SpectralFitting.SpectralFit(lamdas, flux, noise, pixel_weights, fit_wavelengths, FWHM_gal, skyspecs=None, element_imf='kroupa', instrumental_resolution=instrumental_resolution)
+            fit=SpectralFitting.SpectralFit(lamdas, flux, noise, pixel_weights, fit_wavelengths, FWHM_gal, skyspecs=None, element_imf='kroupa', instrumental_resolution=instrumental_resolution, base_template_location='tmp',varelem_template_location='tmp')
 
 
     def test_check_for_gaps_in_lambda(self):
@@ -71,7 +71,7 @@ class SpectralFittingTestCase(unittest.TestCase):
         instrumental_resolution=np.zeros(1000)
 
         with self.assertRaises(ValueError):
-            fit=SpectralFitting.SpectralFit(lamdas, flux, noise, pixel_weights, fit_wavelengths, FWHM_gal, skyspecs=None, element_imf='kroupa', instrumental_resolution=instrumental_resolution)
+            fit=SpectralFitting.SpectralFit(lamdas, flux, noise, pixel_weights, fit_wavelengths, FWHM_gal, skyspecs=None, element_imf='kroupa', instrumental_resolution=instrumental_resolution, base_template_location='tmp',varelem_template_location='tmp')
 
 
 
