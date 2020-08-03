@@ -44,8 +44,7 @@ element_imf='kroupa'
 
 ####################################################
 #Read in the data
-datafile = 'spectra/UGC10738_r3_5_z0.0_0.5.dat'
-
+datafile = 'data/example_spectrum.txt'
 lamdas, flux, errors, _ = np.genfromtxt(datafile, unpack=True)
 
 # The instrumental resolution can be included if it's known. We need a value of sigma_inst in km/s for every pixel
@@ -92,7 +91,12 @@ FWHM_gal=3.0
 
 #Now set up the spectral fitting class
 print('Setting up the fit')
-fit=SpectralFit(lamdas, flux, errors, pixel_weights, fit_wavelengths, FWHM_gal, instrumental_resolution=instrumental_resolution, skyspecs=skyspecs, element_imf=element_imf)
+# These should be the location of the folder containing all the templates
+# The code will use 'glob' to search for all templates matching the correct filenames. 
+base_template_location = '~/Science/stellarpops/CvD2/vcj_twopartimf/vcj_ssp_v8'
+varelem_template_location = '~/Science/stellarpops/CvD2/atlas_rfn_v3'
+
+fit=SpectralFit(lamdas, flux, errors, pixel_weights, fit_wavelengths, FWHM_gal, instrumental_resolution=instrumental_resolution, skyspecs=skyspecs, element_imf=element_imf, base_template_location=base_template_location, varelem_template_location=varelem_template_location)
 fit.set_up_fit()
 
 
@@ -107,10 +111,12 @@ theta.add('sigma', value=330.0, min=10.0, max=500.0)
 #Abundance of Na. Treat this separately, since it can vary up to +1.0 dex
 theta.add('Na', value=0.5, min=-0.45, max=1.0, vary=True)
 
+# Abundance of Carbon. Treat this separately, since its templates are at +/- 0.15 dex rather than +/- 0.3
+theta.add('C', value=0.0, min=-0.2, max=0.2, vary=True)
+
 #Abundance of elements which can vary positively and negatively
 theta.add('Ca', value=0.0,  min=-0.45, max=0.45, vary=True)
 theta.add('Fe', value=0.0, min=-0.45, max=0.45, vary=True)
-theta.add('C', value=0.0, min=-0.45, max=0.45, vary=True)
 theta.add('N', value=0.0, min=-0.45, max=0.45, vary=True)
 theta.add('Ti', value=0.0, min=-0.45, max=0.45, vary=True)
 theta.add('Mg', value=0.0, min=-0.45, max=0.45, vary=True)

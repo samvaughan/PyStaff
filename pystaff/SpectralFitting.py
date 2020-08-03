@@ -68,8 +68,9 @@ class SpectralFit(object):
         #The elements which can change in the CvD12 models
         positive_only_elems=['as/Fe+', 'Cr+','Mn+','Ni+','Co+','Eu+','Sr+','K+','V+','Cu+']
         Na_elem=['Na']
-        normal_elems=['Ca', 'Fe', 'C', 'N', 'Ti', 'Mg', 'Si', 'Ba']
-        self.elements_to_fit=(positive_only_elems, Na_elem, normal_elems)
+        Carbon_elem = ['C']
+        normal_elems=['Ca', 'Fe', 'N', 'Ti', 'Mg', 'Si', 'Ba']
+        self.elements_to_fit=(positive_only_elems, Na_elem, Carbon_elem, normal_elems)
 
         #Make sure we have a small amount of padding, so the templates are slightly longer than the models
         pad = self.template_pad
@@ -125,8 +126,8 @@ class SpectralFit(object):
 
     def prepare_CVD2_interpolators(self):
 
-        self.linear_interp, self.logLam_template =CvDTools.prepare_CvD_interpolator_twopartIMF(templates_lam_range=self.lam_range_temp, velscale=self.velscale, verbose=True, base_template_location=self.base_template_location)
-        self.correction_interps, self.log_lam_template=CvDTools.prepare_CvD_correction_interpolators(varelem_template_location=self.varelem_template_location, templates_lam_range=self.lam_range_temp, velscale=self.velscale, elements=self.elements_to_fit, verbose=True, element_imf=self.element_imf)
+        self.linear_interp, self.logLam_template =CvDTools.prepare_CvD_interpolator_twopartIMF(templates_lam_range=self.lam_range_temp, velscale=self.velscale, verbose=True, base_template_location=self.base_template_location, self.instrumental_resolution)
+        self.correction_interps, self.log_lam_template=CvDTools.prepare_CvD_correction_interpolators(varelem_template_location=self.varelem_template_location, templates_lam_range=self.lam_range_temp, velscale=self.velscale, elements=self.elements_to_fit, verbose=True, element_imf=self.element_imf, self.instrumental_resolution)
 
     def get_emission_lines(self, vac_or_air='air'):
 
