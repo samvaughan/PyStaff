@@ -546,10 +546,10 @@ def prepare_CvD2_element_templates(varelem_template_location, templates_lam_rang
             for d, _ in enumerate(Zs):
 
                 if step>0.0:
-                    e='{}+'.format(elem)
+                    e='{}+'.format('C')
                     gen_step=step
                 elif step<0.0:
-                    e='{}-'.format(elem)
+                    e='{}-'.format('C')
                     gen_step=np.abs(step)
 
                 if step !=0.0:
