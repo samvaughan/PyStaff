@@ -45,11 +45,23 @@ element_imf='kroupa'
 ####################################################
 #Read in the data
 datafile = 'data/example_spectrum.txt'
-lamdas, flux, errors, _ = np.genfromtxt(datafile, unpack=True)
+lamdas, flux, errors, instrumental_resolution_values = np.genfromtxt(datafile, unpack=True)
 
-# The instrumental resolution can be included if it's known. We need a value of sigma_inst in km/s for every pixel
+# The instrumental resolution can be included if it's known. 
+# This must be a function which gives the value of the instrumental resolution in km/s at any wavelength value
+# We use this to convolve the templates with __before__ starting the fitting. 
+# It's okay to only have measured instrumental resolution values near where your data are- but the function must return some value for the instrumental resolution at any wavelength
 # Otherwise leave it as None
-instrumental_resolution=None
+
+def instrumental_resolution_function(wavelength):
+
+    import scipy.interpolate as si 
+
+    instrumental_resolution_interpolator = si.interp1d(lamdas, instrumental_resolution_values, bounds_error=False, fill_value=(instrumental_resolution_values[0], instrumental_resolution_values[-1]))
+
+    return instrumental_resolution_interpolator(wavelength)
+
+instrumental_resolution=instrumental_resolution_function
 
 # Sky Spectra
 # Give a list of 1D sky spectra to be scaled and subtracted during the fit
@@ -226,44 +238,44 @@ p0=SF.get_starting_positions_for_walkers(start_values, stds, nwalkers, bounds)
 
 print("Running the fitting with {} walkers for {} steps".format(nwalkers, nsteps))
 sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=[theta, variables, bounds], pool=None)
-result = sampler.run_mcmc(p0, nsteps)
+result = sampler.run_mcmc(p0, nsteps, progress=True)
 
 
-####################################################################################################
+# ####################################################################################################
 
-#get rid of the burn-in
-burnin=np.array(nsteps-5000).clip(0)
-samples = sampler.chain[:, burnin:, :].reshape((-1, ndim))
-print("\tDone")
+# #get rid of the burn-in
+# burnin=np.array(nsteps-5000).clip(0)
+# samples = sampler.chain[:, burnin:, :].reshape((-1, ndim))
+# print("\tDone")
 
-#Get the 16th, 50th and 84th percentiles of the marginalised posteriors for each parameter 
-best_results = np.array(list(map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]), zip(*np.percentile(samples, [16, 50, 84], axis=0)))))
-#If your posterior surface isn't a nice symmetric Gaussian, then the vector of median values for each parameter (as we're doing here)
-#could very well correspond to an unlikely area of parameter space and you'll need to do something different to this!
-
-
-for v, r in zip(variables, best_results):
-    print("{}: {:.3f} +{:.2f}/-{:.2f}".format(v, r[0], r[1], r[2]))
-
-#Make a set of parameters with the results
-results_theta=LM.Parameters()
-for v, r in zip(variables, best_results):
-    print(v, r)
-    results_theta.add('{}'.format(v), value=r[0], vary=False)
-#and include the things we kept fixed originally too:
-[results_theta.add('{}'.format(thing), value=theta[thing].value, vary=False) for thing in theta if not theta[thing].vary]
-
-#... and plot
-SF.plot_fit(results_theta, fit.fit_settings)
-
-####################################################################################################
-
-#It's always a good idea to inspect the traces
-#Can also make corner plots, if you have corner available:
-#import corner
-#corner.corner(samples, labels=variables)
-#plt.savefig('corner_plot.pdf')
-#And you should inspect the residuals around the best fit as a function of wavelength
+# #Get the 16th, 50th and 84th percentiles of the marginalised posteriors for each parameter 
+# best_results = np.array(list(map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]), zip(*np.percentile(samples, [16, 50, 84], axis=0)))))
+# #If your posterior surface isn't a nice symmetric Gaussian, then the vector of median values for each parameter (as we're doing here)
+# #could very well correspond to an unlikely area of parameter space and you'll need to do something different to this!
 
 
-###################################################################################################
+# for v, r in zip(variables, best_results):
+#     print("{}: {:.3f} +{:.2f}/-{:.2f}".format(v, r[0], r[1], r[2]))
+
+# #Make a set of parameters with the results
+# results_theta=LM.Parameters()
+# for v, r in zip(variables, best_results):
+#     print(v, r)
+#     results_theta.add('{}'.format(v), value=r[0], vary=False)
+# #and include the things we kept fixed originally too:
+# [results_theta.add('{}'.format(thing), value=theta[thing].value, vary=False) for thing in theta if not theta[thing].vary]
+
+# #... and plot
+# SF.plot_fit(results_theta, fit.fit_settings)
+
+# ####################################################################################################
+
+# #It's always a good idea to inspect the traces
+# #Can also make corner plots, if you have corner available:
+# #import corner
+# #corner.corner(samples, labels=variables)
+# #plt.savefig('corner_plot.pdf')
+# #And you should inspect the residuals around the best fit as a function of wavelength
+
+
+# ###################################################################################################

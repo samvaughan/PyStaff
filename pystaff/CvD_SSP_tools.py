@@ -252,6 +252,7 @@ def prepare_CvD_interpolator_twopartIMF(base_template_location, templates_lam_ra
         velscale (float): The velocity difference between two adjacent pixels in the log-rebinned spectrum. Use the same value
         for the templates as you *measure* from the spectrum!
         verbose (bool): Print information to the consolse
+        instrumental_resolution (function): A function which returns the instrumental resolution at any wavelength value
 
     Returns:
         (tuple): A two component tuple containing:
@@ -286,6 +287,7 @@ def prepare_CvD2_templates_twopartIMF(template_location, templates_lam_range, ve
         velscale (float): The velocity difference between two adjacent pixels in the log-rebinned spectrum. Use the same value
         for the templates as you *measure* from the spectrum!
         verbose (bool): Print information to the consolse
+        instrumental_resolution (function): A function which returns the instrumental resolution at any wavelength value
     Returns:
         (tuple): A two component tuple:
             * templates (array): An array of templates with shape (N_wavelength, N_ages, N_metallicities, N_imf_x1, N_imf_x2)
@@ -318,9 +320,13 @@ def prepare_CvD2_templates_twopartIMF(template_location, templates_lam_range, ve
     y=models[t_mask, 1]
     x=temp_lamdas[t_mask]
     #Make a new lamda array, carrying on the delta lamdas of high resolution bit
-    new_x=temp_lamdas[t_mask][0]+0.9*(np.arange(np.ceil((temp_lamdas[t_mask][-1]-temp_lamdas[t_mask][0])/0.9))+1)
+    new_wavelength_array=temp_lamdas[t_mask][0]+0.9*(np.arange(np.ceil((temp_lamdas[t_mask][-1]-temp_lamdas[t_mask][0])/0.9))+1)
     interp=si.interp1d(x, y, fill_value='extrapolate')
-    out=interp(new_x)
+    out=interp(new_wavelength_array)
+
+    # Use the instrumental resolution function to get the quadratic differnece between the instrumental resolution and the model resolution (100km/s at each pixel). We will then convolve the models to match the instrumental resolution
+    if instrumental_resolution is not None:
+        instrumental_sigma_difference = get_sigma_difference(instrumental_resolution, new_wavelength_array)
 
     sspNew, logLam_template, template_velscale = P.log_rebin(templates_lam_range, out, velscale=velscale)
     templates=np.empty((len(sspNew), n_ages, n_zs, len(imfs_X1), len(imfs_X2)))
@@ -347,9 +353,10 @@ def prepare_CvD2_templates_twopartIMF(template_location, templates_lam_range, ve
                     out=interp(new_x)
 
                     #log rebin them
-                    sspNew, logLam_template, template_velscale = P.log_rebin(templates_lam_range, out, velscale=velscale)
                     if instrumental_resolution is not None:
-                        sspNew = P.gaussian_filter1d(sspNew, instrumental_resolution/velscale)
+                        out = P.gaussian_filter1d(out, instrumental_sigma_difference/velscale)
+                    sspNew, logLam_template, template_velscale = P.log_rebin(templates_lam_range, out, velscale=velscale)
+                    
 
                     templates[:, b, a, c, d]=sspNew#/np.median(sspNew)
 
@@ -376,6 +383,7 @@ def prepare_CvD_correction_interpolators(varelem_template_location, templates_la
         numbers come from the headings in the SSP RF file. Na is element 1, Ca is element 2, etc. TODO: Improve this! Make it clearer
 
         verbose (bool): Print information to the consolse
+        instrumental_resolution (function): A function which returns the instrumental resolution at any wavelength value
 
     Returns:
         (tuple): A two component tuple containing:
@@ -458,18 +466,21 @@ def prepare_CvD2_element_templates(varelem_template_location, templates_lam_rang
 
     x=var_elem_spectra['Solar'].lam[t_mask]
     y=var_elem_spectra['Solar'].flam[-1, -1, t_mask]
+
     #Make a new lamda array, carrying on the delta lamdas of high resolution bit
-    new_x = new_wavelength_array_high_resolution(var_elem_spectra['Solar'].lam[t_mask])
-    interp=si.interp1d(x, y, fill_value='extrapolate')
-    data=interp(new_x)
-
-
+    new_wavelength_array = new_wavelength_array_high_resolution(var_elem_spectra['Solar'].lam[t_mask])
+    interp = si.interp1d(x, y, fill_value='extrapolate')
+    data = interp(new_wavelength_array)
+    # rebin one template to get the length of the array
     sspNew, logLam_template, template_velscale = P.log_rebin(templates_lam_range, data, velscale=velscale)
 
+    # Use the instrumental resolution function to get the quadratic differnece between the instrumental resolution and the model resolution (100km/s at each pixel). We will then convolve the models to match the instrumental resolution
+    if instrumental_resolution is not None:
+        instrumental_sigma_difference = get_sigma_difference(instrumental_resolution, new_wavelength_array)
 
     positive_only_templates = np.empty((len(positive_only_elems), len(positive_only_elem_steps), n_ages, n_Zs, len(sspNew)))
     general_templates = np.empty((len(normal_elems), len(elem_steps), n_ages, n_Zs, len(sspNew)))
-    
+
     na_templates = np.empty((len(Na_elem_steps), n_ages, n_Zs, len(sspNew)))
     carbon_templates = np.empty((len(C_elem_steps), n_ages, n_Zs, len(sspNew)))
     T_templates = np.empty((len(T_steps), n_ages, n_Zs, len(sspNew)))
@@ -496,9 +507,9 @@ def prepare_CvD2_element_templates(varelem_template_location, templates_lam_rang
                     interp=si.interp1d(x, y, fill_value='extrapolate')
                     data=interp(new_x)
                             
-                    sspNew, logLam_template, template_velscale = P.log_rebin(templates_lam_range, data, velscale=velscale)
                     if instrumental_resolution is not None:
-                        sspNew = P.gaussian_filter1d(sspNew, instrumental_resolution/velscale)
+                        data = P.gaussian_filter1d(data, instrumental_sigma_difference/velscale)
+                    sspNew, logLam_template, template_velscale = P.log_rebin(templates_lam_range, data, velscale=velscale)
 
                     positive_only_templates[a, b, c, d, :]=sspNew
 
@@ -532,9 +543,9 @@ def prepare_CvD2_element_templates(varelem_template_location, templates_lam_rang
 
                     #data=util.gaussian_filter1d(data, sigs/velscale)
 
-                    sspNew, logLam_template, template_velscale = P.log_rebin(templates_lam_range, data, velscale=velscale)
                     if instrumental_resolution is not None:
-                        sspNew = P.gaussian_filter1d(sspNew, instrumental_resolution/velscale)
+                        data = P.gaussian_filter1d(data, instrumental_sigma_difference/velscale)
+                    sspNew, logLam_template, template_velscale = P.log_rebin(templates_lam_range, data, velscale=velscale)
 
                     general_templates[a, b, c, d, :]=sspNew
 
@@ -564,10 +575,9 @@ def prepare_CvD2_element_templates(varelem_template_location, templates_lam_rang
                 data=interp(new_x)
 
                 #data=util.gaussian_filter1d(data, sigs/velscale)
-
-                sspNew, logLam_template, template_velscale = P.log_rebin(templates_lam_range, data, velscale=velscale)
                 if instrumental_resolution is not None:
-                        sspNew = P.gaussian_filter1d(sspNew, instrumental_resolution/velscale)
+                    data = P.gaussian_filter1d(data, instrumental_sigma_difference/velscale)
+                sspNew, logLam_template, template_velscale = P.log_rebin(templates_lam_range, data, velscale=velscale)
 
                 carbon_templates[b, c, d, :]=sspNew
 
@@ -608,10 +618,9 @@ def prepare_CvD2_element_templates(varelem_template_location, templates_lam_rang
                 interp=si.interp1d(x, y, fill_value='extrapolate')
                 data=interp(new_x)
 
-                    
-                sspNew, logLam_template, template_velscale = P.log_rebin(templates_lam_range, data, velscale=velscale)
                 if instrumental_resolution is not None:
-                        sspNew = P.gaussian_filter1d(sspNew, instrumental_resolution/velscale)
+                    data = P.gaussian_filter1d(data, instrumental_sigma_difference/velscale)
+                sspNew, logLam_template, template_velscale = P.log_rebin(templates_lam_range, data, velscale=velscale)
 
                 na_templates[a, b, c, :]=sspNew
 
@@ -642,11 +651,18 @@ def prepare_CvD2_element_templates(varelem_template_location, templates_lam_rang
                 interp=si.interp1d(x, y, fill_value='extrapolate')
                 data=interp(new_x)
 
-                    
-                sspNew, logLam_template, template_velscale = P.log_rebin(templates_lam_range, data, velscale=velscale)
                 if instrumental_resolution is not None:
-                        sspNew = P.gaussian_filter1d(sspNew, instrumental_resolution/velscale)
+                    data = P.gaussian_filter1d(data, instrumental_sigma_difference/velscale)
+                sspNew, logLam_template, template_velscale = P.log_rebin(templates_lam_range, data, velscale=velscale)
 
                 T_templates[a, b, c, :]=sspNew
 
     return [general_templates, na_templates, carbon_templates, positive_only_templates, T_templates], logLam_template
+
+def get_sigma_difference(instrumental_resolution, wavelength):
+
+    instrumental_resolution_values = instrumental_resolution(wavelength)
+    # The CvD templates are at a constant velocity reoslution of 100km/s, so work out the quadratic difference in sigma
+    # If the instrumental resolution is less than 100km/s, just clip this difference to be 0
+    instrumental_sigma_difference = np.sqrt((instrumental_resolution_values**2 - 100**2).clip(0))
+    return instrumental_sigma_difference

@@ -31,9 +31,9 @@ class SpectralFit(object):
         if not len(np.unique(np.ediff1d(lamdas).round(decimals=8))) == 1:
             raise ValueError('LAMDAS must be on a uniform wavelength grid, with no jumps or changes in wavelength spacing!')
 
-        if instrumental_resolution is not None:
-            if not np.unique(np.array([flux.size, lamdas.size, noise.size, instrumental_resolution.size])).size == 1:
-                raise ValueError('If INSTRUMENTAL_RESOLUTION is given, it must be the same length as FLUX, LAMDAS and NOISE')
+        # if instrumental_resolution is not None:
+        #     if not np.unique(np.array([flux.size, lamdas.size, noise.size, instrumental_resolution.size])).size == 1:
+        #         raise ValueError('If INSTRUMENTAL_RESOLUTION is given, it must be the same length as FLUX, LAMDAS and NOISE')
 
         self.lin_lam = lamdas
         self.lin_flux = flux
@@ -92,12 +92,12 @@ class SpectralFit(object):
                             'log_lam_template': self.log_lam_template,
                             'log_lam': self.log_lam,
                             'fit_wavelengths': self.fit_wavelengths,
-                            'c_light': SpectralFit.c_light,
-                            'instrumental_resolution': self.log_instrumental_resolution}
+                            'c_light': SpectralFit.c_light}
+                            #'instrumental_resolution': self.log_instrumental_resolution}
 
     def rebin_spectra(self):
 
-        loggalaxy, lognoise, log_skyspecs, log_inst_res, logweights, velscale, goodpixels, lam_range_gal, logLam = SF.rebin_spectrum(self.lin_lam, self.lin_flux, self.lin_noise, self.lin_weights, instrumental_resolution=self.instrumental_resolution, skyspecs=self.lin_skyspecs, c=SpectralFit.c_light)
+        loggalaxy, lognoise, log_skyspecs, logweights, velscale, goodpixels, lam_range_gal, logLam = SF.rebin_spectrum(self.lin_lam, self.lin_flux, self.lin_noise, self.lin_weights, instrumental_resolution=self.instrumental_resolution, skyspecs=self.lin_skyspecs, c=SpectralFit.c_light)
 
         self.lam_range_gal = lam_range_gal
         self.velscale = velscale
@@ -110,7 +110,7 @@ class SpectralFit(object):
 
         # These may be None
         self.log_skyspecs = log_skyspecs
-        self.log_instrumental_resolution = log_inst_res
+        #self.log_instrumental_resolution = log_inst_res
 
     def prepare_CVD2_interpolators(self):
 

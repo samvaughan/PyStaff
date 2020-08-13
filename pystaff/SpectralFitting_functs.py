@@ -50,8 +50,8 @@ def rebin_spectrum(lamdas, flux, errors, pixel_weights, instrumental_resolution=
     if skyspecs is not None:
         skyspecs = skyspecs[:, mask[0]]
 
-    if instrumental_resolution is not None:
-        instrumental_resolution = instrumental_resolution[mask]
+    # if instrumental_resolution is not None:
+    #     instrumental_resolution = instrumental_resolution[mask]
 
     # Log rebin them
     galaxy, logLam, velscale = P.log_rebin(lam_range_gal, flux)
@@ -67,13 +67,13 @@ def rebin_spectrum(lamdas, flux, errors, pixel_weights, instrumental_resolution=
 
         all_sky = np.array([O2_sky, sky, OH_sky, NaD_sky])
 
-    log_inst_res = None
-    if instrumental_resolution is not None:
-        log_inst_res, _, _ = P.log_rebin(lam_range_gal, instrumental_resolution, velscale=velscale)
+    # log_inst_res = None
+    # if instrumental_resolution is not None:
+    #     log_inst_res, _, _ = P.log_rebin(lam_range_gal, instrumental_resolution, velscale=velscale)
 
     goodpixels = np.arange(len(galaxy))
 
-    return galaxy, noise, all_sky, log_inst_res, weights, velscale, goodpixels, lam_range_gal, logLam
+    return galaxy, noise, all_sky, weights, velscale, goodpixels, lam_range_gal, logLam
 ################################################################################################################################################################
 
 
