@@ -54,14 +54,12 @@ lamdas, flux, errors, instrumental_resolution_values = np.genfromtxt(datafile, u
 # Otherwise leave it as None
 
 def instrumental_resolution_function(wavelength):
-
     import scipy.interpolate as si 
 
     instrumental_resolution_interpolator = si.interp1d(lamdas, instrumental_resolution_values, bounds_error=False, fill_value=(instrumental_resolution_values[0], instrumental_resolution_values[-1]))
 
     return instrumental_resolution_interpolator(wavelength)
-
-instrumental_resolution=instrumental_resolution_function
+instrumental_resolution = instrumental_resolution_function
 
 # Sky Spectra
 # Give a list of 1D sky spectra to be scaled and subtracted during the fit

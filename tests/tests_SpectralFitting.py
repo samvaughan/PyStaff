@@ -39,9 +39,9 @@ class SpectralFittingTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             fit=SpectralFitting.SpectralFit(lamdas, flux, noise, pixel_weights, fit_wavelengths, FWHM_gal, skyspecs=None, element_imf='kroupa', instrumental_resolution=None, base_template_location='tmp',varelem_template_location='tmp')
 
-    def test_instrumental_resolution_length_checking(self):
+    def test_instrumental_resolution_type_checking(self):
 
-        """Do we raise an error for inputs of different shapes?"""
+        """Do we raise an error if instrumental_resolution is not a function?"""
         #Dummy values
         lamdas=np.ones(1000)
         flux=np.ones(1000)
@@ -52,7 +52,7 @@ class SpectralFittingTestCase(unittest.TestCase):
 
         instrumental_resolution=np.zeros(1001)
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             fit=SpectralFitting.SpectralFit(lamdas, flux, noise, pixel_weights, fit_wavelengths, FWHM_gal, skyspecs=None, element_imf='kroupa', instrumental_resolution=instrumental_resolution, base_template_location='tmp',varelem_template_location='tmp')
 
 

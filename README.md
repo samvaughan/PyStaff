@@ -35,5 +35,6 @@ A number of functions are imported from Michele Cappellari's fantastic Penalized
 * Python 3
 * Standard scientific python stack (numpy, scipy, matplotlib, astropy)
 * pPXF- `pip install ppxf`
+* emcee
 
 You can also run `pip install -r requirements.txt`
